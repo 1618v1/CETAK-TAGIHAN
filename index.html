@@ -6294,7 +6294,16 @@
 
     <!-- ======= TAB 9 – UPLOAD DATA UANG MASUK (EXCEL) ======= -->
     <div class="tab-content" id="tab9">
-        <div class="container" style="max-width:1400px; margin:0 auto; padding:0 16px;">
+        <!-- Banner upload lama disembunyikan (display:none) atas permintaan user:
+             fungsinya duplikat dengan tombol "⬆ Upload Excel" di ⚙️ Menu di bawah
+             (keduanya sama-sama menyimpan ke db.cashIncome & memicu renderPemasukan()),
+             dan bikin bingung staf non-teknis ("klik untuk upload lagi" terlihat
+             seperti ajakan, padahal cuma info status). Elemen SENGAJA TIDAK dihapus
+             dari HTML -- hanya disembunyikan -- karena beberapa event listener JS di
+             bawah masih memanggil elemen di dalamnya (mis. umBtnBatal, umBtnSimpan)
+             tanpa null-check; menghapusnya akan menyebabkan error JS saat halaman
+             dimuat. -->
+        <div class="container" style="max-width:1400px; margin:0 auto; padding:0 16px; display:none;">
 
             <!-- Bar ringkas: selalu tampil, klik untuk buka/tutup kotak upload -->
             <div id="umToggleBar" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 18px;margin-bottom:0;cursor:pointer;user-select:none;transition:background .12s ease, padding .15s ease;">
