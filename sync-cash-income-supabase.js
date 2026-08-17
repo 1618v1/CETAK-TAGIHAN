@@ -1,19 +1,28 @@
 /**
- * SYNC-CASH-INCOME-SUPABASE.JS (BARU) — Cloud sync untuk data Cek Cash
+ * SYNC-CASH-INCOME-SUPABASE.JS — Cloud sync untuk data Cek Cash / Data Uang Masuk
  * ============================================================================
- * Ditulis ulang dari nol. Kredensial diambil dari window.GAMAS_SUPABASE_CONFIG
- * (gamas-supabase-config.js) — tidak ada apapun di sini yang terikat akun.
+ * Kredensial diambil dari window.GAMAS_SUPABASE_CONFIG (gamas-supabase-config.js)
+ * — tidak ada apapun di sini yang terikat akun.
  *
  * Struktur data lokal (IndexedDB store 'cashIncome'): SATU baris per bulan,
- * unik lewat `bulan`, isinya { id, bulan, data:[...], tanggal }. Ini sesuai
- * pola asli di fungsi saveCashData() pada HTML (where('bulan').equals(...)
- * lalu update-atau-add). Maka di Supabase juga 1 baris per bulan, upsert
- * dengan kunci unik `bulan`.
+ * unik lewat `bulan`, isinya { id, bulan, data:[...], tanggal }. Di Supabase
+ * juga 1 baris per bulan, upsert dengan kunci unik `bulan`.
  *
- * Menyediakan window.gamasCashSync.runFullSync(silent) — inilah yang sudah
- * dipanggil oleh tombol "🔄 Sinkronkan Data" di HTML (Cek Cash & Cek
- * Piutang), jadi begitu file ini termuat, tombol itu otomatis berfungsi
- * sungguhan (pull dari server), bukan cuma baca ulang IndexedDB lokal.
+ * ------------------------------------------------------------------------
+ * PERBAIKAN (v2) — mencegah data baru "hilang ketimpa" data lama:
+ * ------------------------------------------------------------------------
+ * Versi sebelumnya push ke Supabase TANPA ditunggu (fire-and-forget). Kalau
+ * user refresh halaman sebelum push selesai, request itu bisa terputus, lalu
+ * pull otomatis yang jalan begitu halaman dibuka ulang akan menarik data LAMA
+ * dari server dan MENIMPA data lokal yang sebenarnya lebih baru.
+ *
+ * Sekarang setiap record diberi penanda `_dirty` begitu disimpan lokal:
+ *   - `_dirty = true`  -> belum dikonfirmasi tersimpan di server
+ *   - `_dirty = false` -> sudah dikonfirmasi tersimpan di server
+ * Push sekarang DITUNGGU (await) sebelum operasi simpan dianggap selesai,
+ * dan pull TIDAK PERNAH menimpa record yang masih `_dirty = true`. Sebelum
+ * pull otomatis jalan saat halaman dibuka, sistem coba push ulang dulu semua
+ * record yang masih dirty (jaga-jaga kalau push sebelumnya gagal/terputus).
  */
 (function () {
     'use strict';
@@ -40,9 +49,23 @@
         return _client;
     }
 
+    const table = db[STORE];
+    const _origAdd = table.add.bind(table);
+    const _origUpdate = table.update.bind(table);
+
+    // Tandai record dirty/bersih langsung lewat operasi Dexie ASLI (bukan
+    // lewat table.add/table.update yang sudah dibungkus) supaya tidak
+    // memicu push lagi / rekursi tak berujung.
+    function markClean(id) {
+        return _origUpdate(id, { _dirty: false }).catch(function () {});
+    }
+    function markDirty(id) {
+        return _origUpdate(id, { _dirty: true }).catch(function () {});
+    }
+
     async function pushRecord(record) {
         const sb = client();
-        if (!sb || isOfflineMode()) return;
+        if (!sb || isOfflineMode()) return false;
         try {
             const { error } = await sb.from(TABLE).upsert({
                 bulan: record.bulan,
@@ -50,8 +73,25 @@
                 tanggal: record.tanggal || new Date().toISOString(),
                 updated_at: new Date().toISOString()
             }, { onConflict: 'bulan' });
-            if (error) console.warn('[GAMAS] Gagal push cashIncome:', error.message);
-        } catch (e) { console.warn('[GAMAS] Gagal push cashIncome:', e); }
+            if (error) { console.warn('[GAMAS] Gagal push cashIncome:', error.message); return false; }
+            if (record.id != null) await markClean(record.id);
+            return true;
+        } catch (e) { console.warn('[GAMAS] Gagal push cashIncome:', e); return false; }
+    }
+
+    // Coba push ulang semua record yang masih ditandai dirty (mis. push
+    // sebelumnya terputus karena refresh). Dipanggil sebelum pull otomatis
+    // jalan, supaya data lokal terbaru "menang" dulu ke server sebelum kita
+    // menarik apapun dari server.
+    async function flushPendingPushes() {
+        if (isOfflineMode() || !client()) return;
+        try {
+            const all = await table.toArray();
+            const pending = all.filter(function (r) { return r._dirty; });
+            for (const rec of pending) {
+                await pushRecord(rec);
+            }
+        } catch (e) { console.warn('[GAMAS] Gagal flush pending pushes cashIncome:', e); }
     }
 
     async function pullFromCloud() {
@@ -64,14 +104,19 @@
 
             let changed = false;
             for (const remote of rows) {
-                const local = await db[STORE].where('bulan').equals(remote.bulan).first();
+                const local = await table.where('bulan').equals(remote.bulan).first();
+
+                // JANGAN timpa record yang masih ada perubahan lokal belum
+                // ke-push -- data lokal yang belum sinkron selalu menang.
+                if (local && local._dirty) continue;
+
                 const remoteTime = new Date(remote.updated_at || remote.tanggal || 0).getTime();
                 const localTime = local ? new Date(local.tanggal || 0).getTime() : -1;
                 if (!local) {
-                    await db[STORE].add({ bulan: remote.bulan, data: remote.data || [], tanggal: remote.tanggal || remote.updated_at });
+                    await _origAdd({ bulan: remote.bulan, data: remote.data || [], tanggal: remote.tanggal || remote.updated_at, _dirty: false });
                     changed = true;
                 } else if (remoteTime > localTime) {
-                    await db[STORE].update(local.id, { data: remote.data || [], tanggal: remote.tanggal || remote.updated_at });
+                    await _origUpdate(local.id, { data: remote.data || [], tanggal: remote.tanggal || remote.updated_at, _dirty: false });
                     changed = true;
                 }
             }
@@ -80,27 +125,28 @@
     }
 
     // --- Bungkus add/update ASLI supaya setiap simpan lokal juga terdorong ke cloud ---
-    const table = db[STORE];
-    const _origAdd = table.add.bind(table);
-    const _origUpdate = table.update.bind(table);
-
     table.add = async function (obj) {
-        const id = await _origAdd(obj);
-        pushRecord(Object.assign({}, obj, { id: id }));
+        const toSave = Object.assign({}, obj, { _dirty: true });
+        const id = await _origAdd(toSave);
+        // Push DITUNGGU supaya kalau user langsung refresh setelah ini,
+        // data sudah (atau sedang beneran dicoba) tersimpan di server --
+        // bukan sekadar "ditembak lalu dilupakan".
+        await pushRecord(Object.assign({}, toSave, { id: id }));
         return id;
     };
     table.update = async function (id, changes) {
-        const result = await _origUpdate(id, changes);
+        const result = await _origUpdate(id, Object.assign({}, changes, { _dirty: true }));
         try {
             const all = await table.toArray();
             const full = all.find(function (r) { return r.id === id; });
-            if (full) pushRecord(full);
+            if (full) await pushRecord(full);
         } catch (e) { /* penyimpanan lokal tetap sukses walau ini gagal */ }
         return result;
     };
 
     async function runFullSync(silent) {
         if (isOfflineMode()) return { skipped: true };
+        await flushPendingPushes();
         const changed = await pullFromCloud();
         if (changed && !silent && typeof tampilkanNotifDataBaru === 'function') {
             tampilkanNotifDataBaru('both');
@@ -108,11 +154,13 @@
         return { changed: changed };
     }
 
-    window.gamasCashSync = { runFullSync: runFullSync, pullFromCloud: pullFromCloud, pushRecord: pushRecord };
+    window.gamasCashSync = { runFullSync: runFullSync, pullFromCloud: pullFromCloud, pushRecord: pushRecord, flushPendingPushes: flushPendingPushes };
 
     if (!isOfflineMode()) {
         setTimeout(function () {
-            pullFromCloud().then(function (changed) {
+            flushPendingPushes().then(function () {
+                return pullFromCloud();
+            }).then(function (changed) {
                 if (changed && typeof tampilkanNotifDataBaru === 'function') {
                     tampilkanNotifDataBaru('cash');
                 }
