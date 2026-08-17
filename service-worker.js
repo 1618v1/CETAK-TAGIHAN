@@ -11,7 +11,7 @@
 // menggantinya. Kalau versi tidak dinaikkan, browser akan terus
 // memakai cache lama.
 // ================================================================
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = 'gamas2026-cache-' + CACHE_VERSION;
 
 // File "app shell" yang wajib bisa dibuka walau tanpa internet.
@@ -79,7 +79,13 @@ self.addEventListener('fetch', function (event) {
     event.respondWith(
       fetch(req)
         .then(function (res) {
-          caches.open(CACHE_NAME).then(function (cache) { cache.put('./index.html', res.clone()); });
+          // PENTING: clone() harus dipanggil SEGERA (sinkron), sebelum
+          // ada proses async apapun. Kalau clone() ditunda di dalam
+          // caches.open().then(), body response bisa sudah "dipakai"
+          // duluan oleh "return res" di bawah -> TypeError: Response
+          // body is already used.
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then(function (cache) { cache.put('./index.html', resClone); });
           return res;
         })
         .catch(function () {
@@ -104,7 +110,9 @@ self.addEventListener('fetch', function (event) {
     caches.match(req).then(function (cached) {
       const networkFetch = fetch(req).then(function (res) {
         if (res && res.ok) {
-          caches.open(CACHE_NAME).then(function (cache) { cache.put(req, res.clone()); });
+          // Sama seperti di atas: clone() dipanggil segera/sinkron dulu.
+          const resClone = res.clone();
+          caches.open(CACHE_NAME).then(function (cache) { cache.put(req, resClone); });
         }
         return res;
       }).catch(function () { return cached; });
