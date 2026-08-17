@@ -177,19 +177,41 @@
             box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
         }
         .tab-btn {
-            padding: 7px 15px;
-            border: 1px solid #e2e8f0;
+            padding: 10px 20px;
             border-radius: 20px;
-            background: #f8fafc;
             font-size: 11px;
             font-weight: 700;
-            color: #64748b;
+            color: #0066ff;
             cursor: pointer;
-            transition: all 0.18s ease;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
             white-space: nowrap;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(100, 150, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                105deg, 
+                rgba(255, 255, 255, 0) 0%, 
+                rgba(150, 200, 255, 0.15) 50%, 
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-25deg);
+            transition: left 0.6s ease-in-out;
+            pointer-events: none;
         }
         .tab-icon {
             width: 15px;
@@ -203,12 +225,84 @@
             opacity: 0.75;
             transition: opacity 0.15s, color 0.15s;
         }
+        .tab-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(0, 50, 255, 0.12);
+            border-color: #3b82f6;
+            box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.15), 0 0 40px rgba(59, 130, 246, 0.3);
+            color: #1d4ed8;
+        }
+        .tab-btn:hover::before {
+            left: 150%;
+        }
         .tab-btn:hover .tab-icon {
             opacity: 0.9;
+            color: #3b82f6;
+        }
+        .tab-btn.active {
+            background: rgba(0, 50, 255, 0.15);
+            border-color: #3b82f6;
+            box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.15), 0 0 40px rgba(59, 130, 246, 0.3);
+            color: #1d4ed8;
         }
         .tab-btn.active .tab-icon {
             opacity: 1;
+            color: #3b82f6;
         }
+        
+        /* ===== GLASSMORPHISM BUTTONS ===== */
+        .glass-btn {
+            padding: 12px 28px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 150, 255, 0.2);
+            box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(100, 150, 255, 0.1);
+            color: #0066ff;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .glass-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                105deg, 
+                rgba(255, 255, 255, 0) 0%, 
+                rgba(150, 200, 255, 0.15) 50%, 
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-25deg);
+            transition: left 0.6s ease-in-out;
+            pointer-events: none;
+        }
+        .glass-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            background: rgba(0, 50, 255, 0.12);
+            border-color: #3b82f6;
+            box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.15), 0 0 40px rgba(59, 130, 246, 0.3);
+            color: #1d4ed8;
+        }
+        .glass-btn:hover::before {
+            left: 150%;
+        }
+        .glass-btn:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+        
         /* ================================================================
            TAB 0 - RINGKASAN (panel gelap bergaya "command center", diadaptasi
            dari desain laporan-penjualan-futuristik, tapi datanya diambil
@@ -506,57 +600,127 @@
             font-size: 11px;
         }
         .selection-toolbar .btn-sel-cancel {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #cbd5e1;
-            padding: 7px 12px;
+            padding: 8px 14px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+        .selection-toolbar .btn-sel-cancel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(105deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.5s ease-in-out;
+            pointer-events: none;
         }
         .selection-toolbar .btn-sel-cancel:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.35);
             color: #fff;
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.15), 0 0 30px rgba(255, 255, 255, 0.1);
+        }
+        .selection-toolbar .btn-sel-cancel:hover::before {
+            left: 150%;
         }
         .selection-toolbar .btn-sel-trash {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            border: none;
-            color: #fff;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
-            box-shadow: 0 3px 10px rgba(217, 119, 6, 0.4);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2), inset 0 0 0 1px rgba(245, 158, 11, 0.15);
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .selection-toolbar .btn-sel-trash::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(105deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.5s ease-in-out;
+            pointer-events: none;
         }
         .selection-toolbar .btn-sel-trash:hover {
-            filter: brightness(1.08);
-            transform: translateY(-1px);
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(245, 158, 11, 0.25);
+            border-color: rgba(245, 158, 11, 0.5);
+            color: #fcd34d;
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35), 0 0 30px rgba(245, 158, 11, 0.25);
+        }
+        .selection-toolbar .btn-sel-trash:hover::before {
+            left: 150%;
         }
         .selection-toolbar .btn-sel-send {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            border: none;
-            color: #fff;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
-            box-shadow: 0 3px 10px rgba(22, 163, 74, 0.4);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2), inset 0 0 0 1px rgba(34, 197, 94, 0.15);
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .selection-toolbar .btn-sel-send::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(105deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.5s ease-in-out;
+            pointer-events: none;
         }
         .selection-toolbar .btn-sel-send:hover {
-            filter: brightness(1.08);
-            transform: translateY(-1px);
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(34, 197, 94, 0.25);
+            border-color: rgba(34, 197, 94, 0.5);
+            color: #bbf7d0;
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35), 0 0 30px rgba(34, 197, 94, 0.25);
+        }
+        .selection-toolbar .btn-sel-send:hover::before {
+            left: 150%;
         }
 
         /* ===== MODAL KONFIRMASI CUSTOM (pengganti confirm()/prompt() bawaan) ===== */
@@ -649,21 +813,57 @@
             font-weight: 700;
             cursor: pointer;
             border: none;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .confirm-modal-actions button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(105deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.5s ease-in-out;
+            pointer-events: none;
         }
         .confirm-modal-btn-cancel {
-            background: #f1f5f9;
-            color: #475569;
+            background: rgba(148, 163, 184, 0.15);
+            color: #64748b;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            box-shadow: 0 4px 12px rgba(148, 163, 184, 0.1), inset 0 0 0 1px rgba(148, 163, 184, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
         .confirm-modal-btn-cancel:hover {
-            background: #e2e8f0;
+            background: rgba(148, 163, 184, 0.25);
+            border-color: rgba(148, 163, 184, 0.4);
+            color: #475569;
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(148, 163, 184, 0.2), 0 0 20px rgba(148, 163, 184, 0.15);
+        }
+        .confirm-modal-btn-cancel:hover::before {
+            left: 150%;
         }
         .confirm-modal-btn-ok {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2), inset 0 0 0 1px rgba(245, 158, 11, 0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
         .confirm-modal-btn-ok:hover {
-            filter: brightness(1.06);
+            background: rgba(245, 158, 11, 0.25);
+            border-color: rgba(245, 158, 11, 0.5);
+            color: #fcd34d;
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35), 0 0 20px rgba(245, 158, 11, 0.25);
+        }
+        .confirm-modal-btn-ok:hover::before {
+            left: 150%;
         }
 
         .tab-content {
@@ -777,79 +977,131 @@
             font-style: italic;
         }
         .btn {
-            padding: 6px 14px;
-            border: none;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 12px;
             font-weight: 600;
             cursor: pointer;
             font-size: 10px;
-            transition: all 0.2s ease;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
             color: #fff;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
             white-space: nowrap;
             height: 28px;
             display: inline-flex;
             align-items: center;
             gap: 4px;
             line-height: 1;
+            position: relative;
+            overflow: hidden;
+            background: rgba(102, 126, 234, 0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2), inset 0 0 0 1px rgba(102, 126, 234, 0.15);
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(105deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-25deg);
+            transition: left 0.5s ease-in-out;
+            pointer-events: none;
         }
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(102, 126, 234, 0.25);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35), 0 0 30px rgba(102, 126, 234, 0.25);
+        }
+        .btn:hover::before {
+            left: 150%;
         }
         .btn-reset {
-            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
-            box-shadow: 0 2px 8px rgba(148, 163, 184, 0.2);
+            background: rgba(148, 163, 184, 0.15);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            box-shadow: 0 4px 12px rgba(148, 163, 184, 0.15), inset 0 0 0 1px rgba(148, 163, 184, 0.1);
         }
         .btn-reset:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(148, 163, 184, 0.3);
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(148, 163, 184, 0.25);
+            border-color: rgba(148, 163, 184, 0.5);
+            box-shadow: 0 6px 20px rgba(148, 163, 184, 0.3), 0 0 30px rgba(148, 163, 184, 0.2);
+        }
+        .btn-reset:hover::before {
+            left: 150%;
         }
         .btn-danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15), inset 0 0 0 1px rgba(239, 68, 68, 0.1);
         }
         .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.5);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35), 0 0 30px rgba(239, 68, 68, 0.25);
+        }
+        .btn-danger:hover::before {
+            left: 150%;
         }
         .btn-outline {
-            background: #ffffff;
+            background: rgba(102, 126, 234, 0.12);
             color: #667eea;
-            border: 2px solid #667eea;
-            box-shadow: none;
+            border: 1.5px solid #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15), inset 0 0 0 1px rgba(102, 126, 234, 0.1);
         }
         .btn-outline:hover {
-            background: #f0f4ff;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+            background: rgba(102, 126, 234, 0.2);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25), 0 0 30px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px) scale(1.05);
+        }
+        .btn-outline:hover::before {
+            left: 150%;
         }
         .btn-orange {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2), inset 0 0 0 1px rgba(245, 158, 11, 0.15);
         }
         .btn-orange:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(245, 158, 11, 0.25);
+            border-color: rgba(245, 158, 11, 0.5);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35), 0 0 30px rgba(245, 158, 11, 0.3);
+        }
+        .btn-orange:hover::before {
+            left: 150%;
         }
         .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2), inset 0 0 0 1px rgba(16, 185, 129, 0.15);
         }
         .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(16, 185, 129, 0.25);
+            border-color: rgba(16, 185, 129, 0.5);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35), 0 0 30px rgba(16, 185, 129, 0.25);
+        }
+        .btn-success:hover::before {
+            left: 150%;
         }
         .btn-purple {
-            background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%);
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2), inset 0 0 0 1px rgba(168, 85, 247, 0.15);
         }
         .btn-purple:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+            transform: translateY(-2px) scale(1.05);
+            background: rgba(168, 85, 247, 0.25);
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35), 0 0 30px rgba(168, 85, 247, 0.25);
+        }
+        .btn-purple:hover::before {
+            left: 150%;
         }
         .cards {
             display: flex;
@@ -4765,21 +5017,22 @@
         }
         #tab9 .t2-mini-cards {
             display: flex;
-            gap: 6px;
             flex-wrap: wrap;
+            gap: 8px;
             margin-bottom: 12px;
         }
         #tab9 .t2-mini {
             background: var(--t2-card);
             border: 1px solid var(--t2-border);
             border-radius: 8px;
-            padding: 7px 12px;
+            padding: 8px 10px;
             text-align: center;
-            min-width: 78px;
+            min-width: 0;
+            flex: 1 1 0;
             box-shadow: var(--shadow);
         }
-        #tab9 .t2-mini .t2-l { font-size: 0.65rem; color: var(--t2-muted); text-transform: uppercase; letter-spacing: .03em; }
-        #tab9 .t2-mini .t2-v { font-size: 1rem; font-weight: 700; color: var(--t2-text); }
+        #tab9 .t2-mini .t2-l { font-size: 0.65rem; color: var(--t2-muted); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+        #tab9 .t2-mini .t2-v { font-size: 0.95rem; font-weight: 700; color: var(--t2-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #tab9 .t2-search-bar {
             display: flex;
             gap: 8px;
@@ -4978,8 +5231,8 @@
         }
         .t2-hist-table td { padding: 8px; border-top: 1px solid var(--t2-border, #e2e8f0); color: var(--t2-text, #1e293b); }
         @media (max-width: 700px) {
-            #tab9 .t2-mini { min-width: 62px; padding: 5px 8px; }
-            #tab9 .t2-mini .t2-v { font-size: 0.85rem; }
+            #tab9 .t2-mini { padding: 5px 8px; flex: 1 1 45%; }
+            #tab9 .t2-mini .t2-v { font-size: 0.78rem; white-space: normal; overflow: visible; text-overflow: clip; }
         }
     </style>
 
@@ -6381,12 +6634,7 @@
             </div>
         </div>
 
-        <div style="max-width:1400px;margin:18px auto 10px;padding:0 16px;display:flex;align-items:center;gap:10px;" id="umDataSectionDivider">
-            <div style="flex:1;height:1px;background:#e2e8f0;"></div>
-            <span style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.04em;text-transform:uppercase;">📊 Data Uang Masuk (semua bulan)</span>
-            <div style="flex:1;height:1px;background:#e2e8f0;"></div>
-        </div>
-        <div style="max-width:1400px;margin:0 auto;padding:0 16px;">
+        <div style="width:100%;margin:0 auto;padding:0;">
         <div class="t2-mini-cards" id="t2MiniCards">
             <div class="t2-mini"><div class="t2-l">Faktur</div><div class="t2-v" id="t2sTotal">0</div></div>
             <div class="t2-mini"><div class="t2-l">Piutang</div><div class="t2-v" id="t2sPiutang">0</div></div>
@@ -6395,6 +6643,7 @@
             <div class="t2-mini"><div class="t2-l">Titip</div><div class="t2-v" id="t2sTitip" style="color:var(--t2-yellow)">0</div></div>
             <div class="t2-mini"><div class="t2-l">Cash</div><div class="t2-v" id="t2sCash">Rp 0</div></div>
             <div class="t2-mini"><div class="t2-l">Transfer</div><div class="t2-v" id="t2sTransfer">Rp 0</div></div>
+            <div class="t2-mini"><div class="t2-l">Total</div><div class="t2-v" id="t2sTotalBayar" style="color:var(--t2-accent)">Rp 0</div></div>
             <div class="t2-mini"><div class="t2-l">Hari</div><div class="t2-v" id="t2sSheets">0</div></div>
         </div>
 
@@ -7924,6 +8173,7 @@
             data.forEach(r => { cash += (r.minyakCash || 0) + (r.rupaCash || 0); tf += (r.minyakTf || 0) + (r.rupaTf || 0); });
             document.getElementById('t2sCash').textContent = fmtRp(cash);
             document.getElementById('t2sTransfer').textContent = fmtRp(tf);
+            document.getElementById('t2sTotalBayar').textContent = fmtRp(cash + tf);
             document.getElementById('badgeCash').textContent = data.length;
         }
         function t2BuildDailySummary(rows) {
@@ -8525,7 +8775,7 @@
                 // Auto-scroll ke bagian tabel "Data Uang Masuk" (gaya Uang Masuk.html) di bawah
                 // supaya hasil upload langsung kelihatan tanpa perlu scroll manual.
                 setTimeout(() => {
-                    const target = document.getElementById('umDataSectionDivider');
+                    const target = document.getElementById('t2MiniCards');
                     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 150);
             } catch (err) {
