@@ -1,0 +1,38 @@
+{
+  "name": "GAMAS 2026 - Dashboard Kerja",
+  "short_name": "GAMAS 2026",
+  "description": "Dashboard kerja GAMAS 2026 - Cetak Tagihan, Bank Data Penjualan, dan Data Uang Masuk",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1f4e78",
+  "theme_color": "#1f4e78",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
