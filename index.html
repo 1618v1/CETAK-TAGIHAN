@@ -7622,6 +7622,22 @@
         // harian/riwayat faktur) bisa sama persis dengan file itu.
         // ================================================================
         let t2AllRows = [];
+        // INDEX NO FAKTUR: satu pencarian riwayat untuk banyak kebutuhan status.
+        // Ini hanya mengubah cara mengambil riwayat, BUKAN logika status.
+        // Kunci memakai normFaktur() agar konsisten dengan pencarian faktur yang ada.
+        let t2InvoiceIndex = new Map();
+        function t2RebuildInvoiceIndex(rows) {
+            const idx = new Map();
+            (rows || []).forEach(r => {
+                const key = normFaktur(r && r.faktur);
+                if (!key) return;
+                let list = idx.get(key);
+                if (!list) { list = []; idx.set(key, list); }
+                list.push(r);
+            });
+            t2InvoiceIndex = idx;
+            return idx;
+        }
         const T2_BULAN_NAMA = {
             '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
             '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
@@ -7788,6 +7804,9 @@
                     r.correctionAt = corr.correctedAt || '';
                 }
             });
+            // Bangun INDEX setelah seluruh status/field baris selesai dibentuk.
+            // Tidak mengubah data; hanya membuat akses riwayat No Faktur menjadi O(1) lookup.
+            t2RebuildInvoiceIndex(rows);
             return rows;
         }
         function t2Fmt(n) { return !n ? '—' : Math.round(n).toLocaleString('id-ID'); }
@@ -7825,7 +7844,9 @@
             if (!key) return '—';
             const corr = t2GetCorrection(key);
             if (corr) return 'LUNAS';
-            const rows = t2AllRows.filter(r => normFaktur(r.faktur) === key);
+            // Ambil riwayat dari INDEX, bukan scan seluruh t2AllRows setiap kali.
+            // Hasil perhitungan/status tetap persis sama.
+            const rows = t2InvoiceIndex.get(key) || [];
             if (!rows.length) return '—';
             let maxTagihan = 0, totalBayar = 0, adaBgBelumCair = false;
             rows.forEach(r => {
