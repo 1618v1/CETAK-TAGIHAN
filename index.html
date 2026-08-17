@@ -8415,8 +8415,10 @@
                 await loadAllCashDataBeforePtRefresh();
                 if (bulanKeys.includes(cashBulan)) { await loadCashData(); }
                 renderPemasukan(); // refresh tabel "Data Uang Masuk" di tab ini supaya langsung terlihat
-                const tab3Aktif = document.getElementById('tab3').classList.contains('active');
-                const tab4Aktif = document.getElementById('tab4').classList.contains('active');
+                const el_tab3_8418 = document.getElementById('tab3');
+                const el_tab4_8418 = document.getElementById('tab4');
+                const tab3Aktif = !!(el_tab3_8418 && el_tab3_8418.classList.contains('active'));
+                const tab4Aktif = !!(el_tab4_8418 && el_tab4_8418.classList.contains('active'));
                 if (tab3Aktif) renderCek();
                 else tampilkanNotifDataBaru('cash');
                 if (tab4Aktif) await ptRefresh(false);
@@ -14490,7 +14492,7 @@
                 else delete cashChecked[r.noFaktur];
             });
             renderTagihanDariPiutang();
-            if (document.getElementById('tab4').classList.contains('active')) ptRenderTempoTable();
+            { const el_tab4_14493 = document.getElementById('tab4'); if (el_tab4_14493 && el_tab4_14493.classList.contains('active')) ptRenderTempoTable(); }
             updatePiutangSelectedInfo();
             updateCashSelectedInfo();
 
@@ -15125,8 +15127,10 @@
                 await loadCashData();
                 renderPemasukan();
             }
-            const tab3Aktif = document.getElementById('tab3').classList.contains('active');
-            const tab4Aktif = document.getElementById('tab4').classList.contains('active');
+            const el_tab3_15128 = document.getElementById('tab3');
+            const el_tab4_15128 = document.getElementById('tab4');
+            const tab3Aktif = !!(el_tab3_15128 && el_tab3_15128.classList.contains('active'));
+            const tab4Aktif = !!(el_tab4_15128 && el_tab4_15128.classList.contains('active'));
             if (tab3Aktif) renderCek();
             if (tab4Aktif) await ptRefresh(false);
             // Tampilkan notifikasi "Data baru masuk" di tab yang SEDANG TIDAK dibuka,
