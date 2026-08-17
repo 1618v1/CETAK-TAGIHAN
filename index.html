@@ -10996,28 +10996,206 @@
         // ================================================================
         // MENU BANK DATA PENJUALAN
         // ================================================================
-        const btnExportSalesEl = document.getElementById('btnExportSales');
-        if (btnExportSalesEl) {
-            btnExportSalesEl.addEventListener('click', function () {
-                try {
-                    const rows = (typeof salesFilteredRows !== 'undefined' && Array.isArray(salesFilteredRows) && salesFilteredRows.length)
-                        ? salesFilteredRows : (Array.isArray(salesData) ? salesData : []);
-                    if (!rows.length) { showToast('⚠️ Tidak ada data penjualan untuk di-download.', 'warning'); return; }
-                    const data = rows.map(r => ({
-                        'Tanggal': r.Tanggal || '', 'No.Faktur': r['No.Faktur'] || '', 'Produk': r.Produk || '',
-                        'Jumlah': parseNumber(r.Jumlah) || 0, 'Satuan': r.Satuan || '',
-                        'Harga Jual': parseNumber(r['Harga Jual']) || 0, 'Disc': parseNumber(r.Disc) || 0,
-                        'Total': parseNumber(r.Total) || 0, 'Sales': r.Sales || '', 'Customer': r.Customer || '',
-                        'Alamat': r.Alamat || '', 'Pembayaran': r.Pembayaran || '', 'Harga Beli': parseNumber(r['Harga Beli']) || 0
-                    }));
-                    const ws = XLSX.utils.json_to_sheet(data);
-                    ws['!cols'] = [{wch:12},{wch:18},{wch:28},{wch:10},{wch:10},{wch:14},{wch:12},{wch:16},{wch:18},{wch:28},{wch:32},{wch:14},{wch:14}];
-                    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Bank Data Penjualan');
-                    XLSX.writeFile(wb, 'Bank_Data_Penjualan_' + new Date().toISOString().slice(0,10) + '.xlsx');
-                    showToast('📥 Data penjualan berhasil di-download.', 'success');
-                } catch (e) { showToast('❌ Gagal download: ' + e.message, 'warning'); }
-            });
+        // ================================================================
+        // DOWNLOAD BANK DATA PENJUALAN — PILIH BULAN ATAU 1 TANGGAL
+        // Hasil Excel dibuat rapi: judul, periode, header, autofilter,
+        // freeze header, format angka, total, dan lebar kolom otomatis.
+        // ================================================================
+        function salesDownloadDateKey(v) {
+            return salesExcelDate(v);
         }
+
+        function salesDownloadPeriodLabel(key) {
+            if (!key) return '';
+            const p = String(key).split('-');
+            if (p.length === 2) {
+                const nama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                const m = parseInt(p[1], 10);
+                return (nama[m - 1] || p[1]) + ' ' + p[0];
+            }
+            const d = new Date(key + 'T00:00:00');
+            if (!isNaN(d.getTime())) return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+            return key;
+        }
+
+        function openSalesDownloadModal() {
+            const all = Array.isArray(salesData) ? salesData : [];
+            if (!all.length) { showToast('⚠️ Belum ada data Bank Data Penjualan untuk di-download.', 'warning'); return; }
+
+            const periods = Array.from(new Set(all.map(r => salesDownloadDateKey(r.Tanggal)).filter(Boolean).map(x => x.slice(0,7)))).sort();
+            const selectedPeriod = (document.getElementById('fBulanSales')?.value || '').slice(0,7);
+            const defaultPeriod = periods.includes(selectedPeriod) ? selectedPeriod : (periods[periods.length - 1] || '');
+
+            let overlay = document.getElementById('salesDownloadModal');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'salesDownloadModal';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:100500;display:flex;align-items:center;justify-content:center;padding:18px;';
+                overlay.innerHTML = `
+                    <div style="width:min(470px,96vw);background:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.22);overflow:hidden;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e5e7eb;">
+                            <div><div style="font-weight:700;font-size:16px;color:#1f2937;">Download Bank Data Penjualan</div><div style="font-size:11px;color:#64748b;margin-top:3px;">Pilih 1 bulan penuh atau 1 tanggal tertentu.</div></div>
+                            <button type="button" id="salesDownloadClose" style="border:0;background:#f1f5f9;border-radius:8px;padding:7px 10px;cursor:pointer;">✕</button>
+                        </div>
+                        <div style="padding:16px;">
+                            <div style="display:flex;gap:8px;margin-bottom:14px;">
+                                <button type="button" id="salesDlModeMonth" class="btn btn-outline" style="flex:1;margin:0;">📅 Bulan Tertentu</button>
+                                <button type="button" id="salesDlModeDate" class="btn btn-outline" style="flex:1;margin:0;">🗓️ Tanggal Tertentu</button>
+                            </div>
+                            <div id="salesDlMonthBox">
+                                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:5px;">Pilih bulan</label>
+                                <select id="salesDlMonth" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;"></select>
+                            </div>
+                            <div id="salesDlDateBox" style="display:none;">
+                                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:5px;">Pilih tanggal</label>
+                                <input type="date" id="salesDlDate" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                            </div>
+                            <div style="margin-top:13px;padding:10px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:11px;color:#475569;line-height:1.5;">Hasil Excel akan berisi data sesuai pilihan, diurutkan berdasarkan tanggal → no faktur → produk, lengkap dengan total dan format angka.</div>
+                        </div>
+                        <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid #e5e7eb;">
+                            <button type="button" id="salesDownloadCancel" class="btn btn-outline" style="margin:0;">Batal</button>
+                            <button type="button" id="salesDownloadDo" class="btn btn-primary" style="margin:0;">📥 Download Excel</button>
+                        </div>
+                    </div>`;
+                document.body.appendChild(overlay);
+            }
+
+            const monthSel = overlay.querySelector('#salesDlMonth');
+            monthSel.innerHTML = periods.map(x => `<option value="${x}">${salesDownloadPeriodLabel(x)}</option>`).join('');
+            if (defaultPeriod) monthSel.value = defaultPeriod;
+            const dateInput = overlay.querySelector('#salesDlDate');
+            dateInput.value = all.map(r => salesDownloadDateKey(r.Tanggal)).filter(Boolean).sort().pop() || '';
+
+            const monthBox = overlay.querySelector('#salesDlMonthBox');
+            const dateBox = overlay.querySelector('#salesDlDateBox');
+            const monthBtn = overlay.querySelector('#salesDlModeMonth');
+            const dateBtn = overlay.querySelector('#salesDlModeDate');
+            const setMode = mode => {
+                const isMonth = mode === 'month';
+                monthBox.style.display = isMonth ? '' : 'none';
+                dateBox.style.display = isMonth ? 'none' : '';
+                monthBtn.style.borderColor = isMonth ? '#2563eb' : '';
+                dateBtn.style.borderColor = isMonth ? '' : '#2563eb';
+                overlay.dataset.mode = mode;
+            };
+            setMode('month');
+
+            const close = () => { overlay.style.display = 'none'; };
+            overlay.querySelector('#salesDownloadClose').onclick = close;
+            overlay.querySelector('#salesDownloadCancel').onclick = close;
+            monthBtn.onclick = () => setMode('month');
+            dateBtn.onclick = () => setMode('date');
+            overlay.onclick = e => { if (e.target === overlay) close(); };
+            overlay.querySelector('#salesDownloadDo').onclick = () => {
+                try {
+                    const mode = overlay.dataset.mode || 'month';
+                    let rows = [];
+                    let periodLabel = '';
+                    let filenamePeriod = '';
+                    if (mode === 'month') {
+                        const month = monthSel.value;
+                        rows = all.filter(r => salesDownloadDateKey(r.Tanggal).slice(0,7) === month);
+                        periodLabel = salesDownloadPeriodLabel(month);
+                        filenamePeriod = month;
+                    } else {
+                        const date = dateInput.value;
+                        if (!date) { showToast('⚠️ Pilih tanggal terlebih dahulu.', 'warning'); return; }
+                        rows = all.filter(r => salesDownloadDateKey(r.Tanggal) === date);
+                        periodLabel = salesDownloadPeriodLabel(date);
+                        filenamePeriod = date;
+                    }
+                    if (!rows.length) { showToast('⚠️ Tidak ada data pada ' + periodLabel + '.', 'warning'); return; }
+
+                    rows = rows.slice().sort((a,b) => {
+                        const da = salesDownloadDateKey(a.Tanggal), db = salesDownloadDateKey(b.Tanggal);
+                        if (da !== db) return da.localeCompare(db);
+                        const fa = String(a['No.Faktur'] || ''), fb = String(b['No.Faktur'] || '');
+                        if (fa !== fb) return fa.localeCompare(fb, undefined, {numeric:true});
+                        return String(a.Produk || '').localeCompare(String(b.Produk || ''));
+                    });
+
+                    const header = ['NO','Tanggal','No. Faktur','Produk','Jumlah','Satuan','Harga Jual','Disc','Total','Sales','Customer','Alamat','Pembayaran','Harga Beli'];
+                    const aoa = [
+                        ['BANK DATA PENJUALAN'],
+                        ['Periode', periodLabel],
+                        ['Jumlah Baris', rows.length],
+                        [],
+                        header
+                    ];
+                    rows.forEach((r,i) => aoa.push([
+                        i+1,
+                        salesDownloadDateKey(r.Tanggal),
+                        String(r['No.Faktur'] ?? ''),
+                        r.Produk || '',
+                        parseNumber(r.Jumlah) || 0,
+                        r.Satuan || '',
+                        parseNumber(r['Harga Jual']) || 0,
+                        parseNumber(r.Disc) || 0,
+                        parseNumber(r.Total) || 0,
+                        r.Sales || '',
+                        r.Customer || '',
+                        r.Alamat || '',
+                        r.Pembayaran || '',
+                        parseNumber(r['Harga Beli']) || 0
+                    ]));
+
+                    const totalJumlah = rows.reduce((n,r) => n + (parseNumber(r.Jumlah) || 0), 0);
+                    const totalDisc = rows.reduce((n,r) => n + (parseNumber(r.Disc) || 0), 0);
+                    const totalJual = rows.reduce((n,r) => n + (parseNumber(r.Total) || 0), 0);
+                    const totalBeli = rows.reduce((n,r) => n + (parseNumber(r['Harga Beli']) || 0), 0);
+                    const totalRowIndex = aoa.length;
+                    aoa.push(['','','','','TOTAL','','',totalDisc,totalJual,'','','','',totalBeli]);
+
+                    const ws = XLSX.utils.aoa_to_sheet(aoa);
+                    ws['!merges'] = [
+                        {s:{r:0,c:0},e:{r:0,c:13}},
+                        {s:{r:1,c:0},e:{r:1,c:0}}
+                    ];
+                    ws['!freeze'] = {xSplit:0,ySplit:5};
+                    ws['!autofilter'] = {ref:'A5:N' + (5 + rows.length)};
+                    ws['!cols'] = [
+                        {wch:6},{wch:12},{wch:20},{wch:30},{wch:10},{wch:10},{wch:15},{wch:13},
+                        {wch:16},{wch:18},{wch:28},{wch:34},{wch:16},{wch:15}
+                    ];
+                    ws['A1'].s = {font:{bold:true,sz:15},alignment:{horizontal:'center'}};
+                    ws['A2'].s = {font:{bold:true}};
+                    ws['A3'].s = {font:{bold:true}};
+                    for (let c=0;c<header.length;c++) {
+                        const cell = ws[XLSX.utils.encode_cell({r:4,c})];
+                        if (cell) cell.s = {font:{bold:true},alignment:{horizontal:'center',vertical:'center'},fill:{fgColor:{rgb:'E8EEF7'}},border:{bottom:{style:'thin',color:{rgb:'9CA3AF'}}}};
+                    }
+                    for (let r=5;r<5+rows.length;r++) {
+                        const dateCell = ws[XLSX.utils.encode_cell({r,c:1})];
+                        if (dateCell) { dateCell.t='d'; dateCell.v=new Date(aoa[r][1]+'T00:00:00'); dateCell.z='dd/mm/yy'; }
+                        [4,6,7,8,13].forEach(c => { const cell=ws[XLSX.utils.encode_cell({r,c})]; if(cell) cell.z='#,##0'; });
+                    }
+                    // Baris total di bagian paling bawah.
+                    const tr = totalRowIndex - 1;
+                    ws[XLSX.utils.encode_cell({r:tr,c:4})] = {v:totalJumlah,t:'n',z:'#,##0'};
+                    ws[XLSX.utils.encode_cell({r:tr,c:7})] = {v:totalDisc,t:'n',z:'#,##0'};
+                    ws[XLSX.utils.encode_cell({r:tr,c:8})] = {v:totalJual,t:'n',z:'#,##0'};
+                    ws[XLSX.utils.encode_cell({r:tr,c:13})] = {v:totalBeli,t:'n',z:'#,##0'};
+                    ws[XLSX.utils.encode_cell({r:tr,c:4})].s = {font:{bold:true}};
+                    ws[XLSX.utils.encode_cell({r:tr,c:7})].s = {font:{bold:true}};
+                    ws[XLSX.utils.encode_cell({r:tr,c:8})].s = {font:{bold:true}};
+                    ws[XLSX.utils.encode_cell({r:tr,c:13})].s = {font:{bold:true}};
+                    ws['!rows'] = [{hpt:24},{hpt:20},{hpt:20},{hpt:8},{hpt:24}];
+
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, mode === 'month' ? 'Data Bulan' : 'Data Tanggal');
+                    XLSX.writeFile(wb, 'Bank_Data_Penjualan_' + filenamePeriod + '.xlsx');
+                    close();
+                    showToast('📥 Excel ' + periodLabel + ' berhasil di-download.', 'success');
+                } catch (e) {
+                    console.error(e);
+                    showToast('❌ Gagal download: ' + e.message, 'warning');
+                }
+            };
+            overlay.style.display = 'flex';
+        }
+
+        const btnExportSalesEl = document.getElementById('btnExportSales');
+        if (btnExportSalesEl) btnExportSalesEl.addEventListener('click', openSalesDownloadModal);
 
         const btnTrashSalesEl = document.getElementById('btnTrashSales');
         if (btnTrashSalesEl) {
