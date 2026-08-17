@@ -21,6 +21,6 @@
  * lebih rapi kalau project_ref tidak nongol di histori commit publik.
  */
 window.GAMAS_SUPABASE_CONFIG = {
-    url: 'https://nabuvwpeamlkrtrddgod.supabase.co',
-    anonKey: 'sb_publishable_LC9XwfBeBwRdw-Tahyvjkg_YN9bqV1j'
+    url: 'https://YOUR-PROJECT-REF.supabase.co',
+    anonKey: 'YOUR-ANON-PUBLIC-KEY'
 };
