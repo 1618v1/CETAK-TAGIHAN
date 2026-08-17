@@ -283,7 +283,9 @@
         .rk-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 5px #22c55e; animation: rkPulse 2s infinite; }
         @keyframes rkPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
 
-        .rk-stats-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .rk-stats-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 960px) { .rk-stats-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .rk-stats-bar { grid-template-columns: 1fr; } }
         .rk-stat-card {
             background: var(--rk-panel); border: 1px solid var(--rk-border); border-radius: 9px;
             padding: 6px 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
@@ -5271,8 +5273,8 @@
         <div class="rk-wrap">
             <div class="rk-header">
                 <div class="rk-logo-area">
-                    <h1>Ringkasan</h1>
-                    <p>Dashboard &middot; Kerja</p>
+                    <h1>Ringkasan Cetak Tagihan</h1>
+                    <p>Rekap Bank Data Penjualan &middot; Tanpa Piutang</p>
                 </div>
                 <div class="rk-header-meta">
                     <div class="rk-meta-chip">Tanggal <b id="rkTanggalHariIni">-</b></div>
@@ -5284,7 +5286,7 @@
             <div id="rkEmptyGlobal" class="rk-empty-global" style="display:none;">
                 <div class="rk-empty-icon">📂</div>
                 <div class="rk-empty-title">Belum ada data penjualan tersimpan</div>
-                <div class="rk-empty-sub">Silakan mulai input data lewat tab Bank Data Penjualan.</div>
+                <div class="rk-empty-sub">Silakan import/input data di Bank Data Penjualan, lalu pilih faktur untuk dicetak.</div>
             </div>
 
             <div id="rkContent">
@@ -12307,26 +12309,94 @@
         }
 
         function rkRender() {
+            // RINGKASAN KHUSUS CETAK TAGIHAN
+            // Tidak memakai modul piutang/pembayaran. Sumber utama: salesData.
             if (!document.getElementById('tab0')) return;
+
             const emptyGlobal = document.getElementById('rkEmptyGlobal');
             const content = document.getElementById('rkContent');
-            if (salesData.length === 0) {
+
+            if (!Array.isArray(salesData) || salesData.length === 0) {
                 if (emptyGlobal) emptyGlobal.style.display = 'block';
                 if (content) content.style.display = 'none';
                 return;
             }
+
             if (emptyGlobal) emptyGlobal.style.display = 'none';
             if (content) content.style.display = 'block';
 
-            document.getElementById('rkTanggalHariIni').textContent = fmtTanggal(new Date().toISOString().slice(0, 10));
+            document.getElementById('rkTanggalHariIni').textContent =
+                fmtTanggal(new Date().toISOString().slice(0, 10));
+
             rkPopulatePeriodeSelect();
             const periode = document.getElementById('rkPeriodeSelect').value;
 
+            // Data periode yang sedang dipilih.
             const rowsPeriode = salesData.filter(r => rkPeriodKey(r.Tanggal) === periode);
             const fitriRows = rowsPeriode.filter(r => ptIsFitri(r.Produk));
             const rupaRows = rowsPeriode.filter(r => !ptIsFitri(r.Produk));
 
-            const salesList = Array.from(new Set(rowsPeriode.map(r => (r.Sales || '').trim()).filter(Boolean))).sort();
+            const salesList = Array.from(
+                new Set(rowsPeriode.map(r => (r.Sales || '').trim()).filter(Boolean))
+            ).sort();
+
+            // ----- Statistik utama untuk aplikasi CETAK TAGIHAN -----
+            const invoiceSet = new Set();
+            let totalNilai = 0;
+            rowsPeriode.forEach(r => {
+                const no = normFaktur(r['No.Faktur']);
+                if (no) invoiceSet.add(no);
+                totalNilai += parseNumber(r.Total);
+            });
+
+            // Faktur yang sedang dicentang untuk dikirim ke Cetak Tagihan.
+            const selectedSet = new Set(getSelectedSalesInvoiceNumbers());
+            let selectedCount = 0;
+            let selectedTotal = 0;
+            const selectedSeen = new Set();
+
+            salesData.forEach(r => {
+                const no = normFaktur(r['No.Faktur']);
+                if (!no || !selectedSet.has(no)) return;
+                if (!selectedSeen.has(no)) {
+                    selectedSeen.add(no);
+                    selectedCount++;
+                }
+                selectedTotal += parseNumber(r.Total);
+            });
+
+            const statsBar = document.getElementById('rkStatsBar');
+            if (statsBar) {
+                statsBar.innerHTML = `
+                    <div class="rk-stat-card">
+                        <div>
+                            <div class="rk-stat-label">Total Faktur</div>
+                            <div class="rk-stat-value">${invoiceSet.size}</div>
+                        </div>
+                        <div class="rk-stat-sub">Faktur</div>
+                    </div>
+                    <div class="rk-stat-card">
+                        <div>
+                            <div class="rk-stat-label">Total Nilai</div>
+                            <div class="rk-stat-value" style="font-size:15px;">${fmtRp(totalNilai)}</div>
+                        </div>
+                        <div class="rk-stat-sub">${fmtBulanTahun(periode)}</div>
+                    </div>
+                    <div class="rk-stat-card">
+                        <div>
+                            <div class="rk-stat-label">Dipilih Cetak</div>
+                            <div class="rk-stat-value">${selectedCount}</div>
+                        </div>
+                        <div class="rk-stat-sub">Faktur</div>
+                    </div>
+                    <div class="rk-stat-card">
+                        <div>
+                            <div class="rk-stat-label">Nilai Dipilih</div>
+                            <div class="rk-stat-value" style="font-size:15px;">${fmtRp(selectedTotal)}</div>
+                        </div>
+                        <div class="rk-stat-sub">Untuk Cetak Tagihan</div>
+                    </div>`;
+            }
 
             // ----- Penjualan FITRI -----
             const fitriMap = {};
@@ -12338,22 +12408,18 @@
                 fitriMap[produk].bySales[s] = (fitriMap[produk].bySales[s] || 0) + qty;
                 fitriMap[produk].total += qty;
             });
+
             const fitriRowsArr = Object.values(fitriMap).sort((a, b) => b.total - a.total);
             const fitriTable = rkBuildSalesTable(fitriRowsArr, salesList);
+
             document.querySelector('#rkTableFitri thead').innerHTML = fitriTable.theadHtml;
             document.querySelector('#rkTableFitri tbody').innerHTML = fitriTable.tbodyHtml;
-            document.getElementById('rkFitriEmpty').style.display = fitriRowsArr.length ? 'none' : 'block';
-            document.getElementById('rkTableFitri').style.display = fitriRowsArr.length ? '' : 'none';
+            document.getElementById('rkFitriEmpty').style.display =
+                fitriRowsArr.length ? 'none' : 'block';
+            document.getElementById('rkTableFitri').style.display =
+                fitriRowsArr.length ? '' : 'none';
 
-            // ----- Stat cards (Total FITRI + per sales) -----
-            const statsBar = document.getElementById('rkStatsBar');
-            let statsHtml = `<div class="rk-stat-card"><div><div class="rk-stat-label">Total Fitri</div><div class="rk-stat-value">${fitriTable.grandTotal}</div></div><div class="rk-stat-sub">Unit</div></div>`;
-            salesList.forEach(s => {
-                statsHtml += `<div class="rk-stat-card"><div><div class="rk-stat-label">${escapeHtml(s)}</div><div class="rk-stat-value">${fitriTable.totalPerSales[s] || 0}</div></div><div class="rk-stat-sub">Unit</div></div>`;
-            });
-            statsBar.innerHTML = statsHtml;
-
-            // ----- Rupa Rupa -----
+            // ----- RUPA-RUPA -----
             const rupaMap = {};
             rupaRows.forEach(r => {
                 const produk = (r.Produk || '-').trim();
@@ -12363,77 +12429,41 @@
                 rupaMap[produk].bySales[s] = (rupaMap[produk].bySales[s] || 0) + qty;
                 rupaMap[produk].total += qty;
             });
+
             let rupaRowsArr = Object.values(rupaMap).sort((a, b) => b.total - a.total);
 
-            // ----- Dropdown "Pilih Produk" — daftar SEMUA produk Rupa Rupa di periode
-            // ini (tidak ikut terpotong oleh filter cari), diurutkan A-Z. -----
             const rupaSelectEl = document.getElementById('rkPilihProdukRupa');
             if (rupaSelectEl) {
                 const namaProdukList = Object.keys(rupaMap).sort((a, b) => a.localeCompare(b));
-                const optionsHtml = '<option value="">— Pilih Produk —</option>' +
-                    namaProdukList.map(nm => `<option value="${escapeHtml(nm)}">${escapeHtml(nm)}</option>`).join('');
-                if (rupaSelectEl.dataset.optCount != namaProdukList.length || rupaSelectEl.innerHTML === '') {
+                const optionsHtml =
+                    '<option value="">— Pilih Produk —</option>' +
+                    namaProdukList.map(nm =>
+                        `<option value="${escapeHtml(nm)}">${escapeHtml(nm)}</option>`
+                    ).join('');
+
+                if (rupaSelectEl.dataset.optCount != namaProdukList.length ||
+                    rupaSelectEl.innerHTML === '') {
                     rupaSelectEl.innerHTML = optionsHtml;
                     rupaSelectEl.dataset.optCount = namaProdukList.length;
                 }
-                // Sinkronkan pilihan dropdown dengan isi kolom cari saat ini
-                rupaSelectEl.value = namaProdukList.includes(rkSearchRupaTerm) ? rkSearchRupaTerm : '';
+                rupaSelectEl.value =
+                    namaProdukList.includes(rkSearchRupaTerm) ? rkSearchRupaTerm : '';
             }
 
             if (rkSearchRupaTerm) {
                 const q = rkSearchRupaTerm.toLowerCase();
-                rupaRowsArr = rupaRowsArr.filter(r => r.produk.toLowerCase().includes(q));
+                rupaRowsArr = rupaRowsArr.filter(r =>
+                    r.produk.toLowerCase().includes(q)
+                );
             }
+
             const rupaTable = rkBuildSalesTable(rupaRowsArr, salesList, { includeTotal: false });
             document.querySelector('#rkTableRupa thead').innerHTML = rupaTable.theadHtml;
             document.querySelector('#rkTableRupa tbody').innerHTML = rupaTable.tbodyHtml;
-            document.getElementById('rkRupaEmpty').style.display = rupaRowsArr.length ? 'none' : 'block';
-            document.getElementById('rkTableRupa').style.display = rupaRowsArr.length ? '' : 'none';
-
-            // ----- Piutang Terbesar & Piutang Terlama (snapshot terkini, tidak terikat periode) -----
-            rkRenderPiutang();
-        }
-
-        function rkRenderPiutang() {
-            const besarBody = document.getElementById('rkPiutangBesarBody');
-            const lamaBody = document.getElementById('rkPiutangLamaBody');
-            const besarEmpty = document.getElementById('rkPiutangBesarEmpty');
-            const lamaEmpty = document.getElementById('rkPiutangLamaEmpty');
-            if (!besarBody || !lamaBody) return;
-            if (!window._ptDataLoaded) {
-                // Data piutang belum dimuat sama sekali — biarkan kosong dulu,
-                // switchTab('tab0') akan memuatnya lalu panggil ulang fungsi ini.
-                besarBody.innerHTML = '';
-                lamaBody.innerHTML = '';
-                besarEmpty.style.display = 'block';
-                lamaEmpty.style.display = 'block';
-                return;
-            }
-            let tempoRows;
-            try { tempoRows = ptBuildTempoRows(); } catch (e) { tempoRows = []; }
-            // Gabungkan per No.Faktur (1 faktur bisa punya beberapa baris produk,
-            // tapi totalFaktur/totalBayar-nya sudah sama di semua barisnya).
-            const byFaktur = {};
-            tempoRows.forEach(r => {
-                const key = normFaktur(r.noFaktur);
-                if (!key) return;
-                if (!byFaktur[key]) {
-                    byFaktur[key] = { ...r, produkSet: new Set() };
-                }
-                byFaktur[key].produkSet.add((r.produkNama || r.produk || '').trim());
-            });
-            const piutangList = Object.values(byFaktur).map(d => {
-                const sisa = Math.max(0, (d.totalFaktur || 0) - (d.totalBayar || 0));
-                return { ...d, sisa, produkGabungan: Array.from(d.produkSet).filter(Boolean).join(', ') };
-            }).filter(d => d.statusClass !== 'lunas' && d.sisa > 0.5);
-
-            const besar = [...piutangList].sort((a, b) => b.sisa - a.sisa).slice(0, 5);
-            const lama = [...piutangList].sort((a, b) => String(a.tanggal || '').localeCompare(String(b.tanggal || ''))).slice(0, 5);
-
-            besarBody.innerHTML = besar.map(rkRenderPiutangRow).join('');
-            lamaBody.innerHTML = lama.map(rkRenderPiutangRow).join('');
-            besarEmpty.style.display = besar.length ? 'none' : 'block';
-            lamaEmpty.style.display = lama.length ? 'none' : 'block';
+            document.getElementById('rkRupaEmpty').style.display =
+                rupaRowsArr.length ? 'none' : 'block';
+            document.getElementById('rkTableRupa').style.display =
+                rupaRowsArr.length ? '' : 'none';
         }
 
         document.getElementById('rkPeriodeSelect').addEventListener('change', rkRender);
@@ -17951,11 +17981,7 @@
             });
             scheduleFitTableWraps();
             if (tabName === 'tab0') {
-                if (!window._ptDataLoaded) {
-                    await loadAllCashDataBeforePtRefresh();
-                    await ptRefresh(false);
-                    window._ptDataLoaded = true;
-                }
+                // Ringkasan hanya membaca salesData. Tidak memuat modul piutang.
                 rkRender();
             }
             if (tabName === 'tab3') {
