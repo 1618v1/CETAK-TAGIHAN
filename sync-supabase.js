@@ -1,29 +1,35 @@
 /**
- * SYNC-SUPABASE.JS (BARU) — Cloud sync untuk data SALES / Bank Data Penjualan
+ * SYNC-SUPABASE.JS — Cloud sync untuk data SALES / Bank Data Penjualan
  * ============================================================================
- * File ini DITULIS ULANG DARI NOL (bukan pemulihan file lama). Kredensial
- * Supabase TIDAK ada di sini sama sekali — semua diambil dari
+ * Kredensial Supabase TIDAK ada di sini sama sekali — semua diambil dari
  * window.GAMAS_SUPABASE_CONFIG (lihat gamas-supabase-config.js), jadi file
  * ini 100% aman dipindah ke akun/project Supabase manapun.
  *
  * Cara kerja singkat:
  *  - Setiap baris sales diberi `_uuid` (stabil, unik lintas perangkat) supaya
- *    2 device yang sama-sama offline lalu online lagi TIDAK bentrok id-nya
- *    (beda dengan id auto-increment IndexedDB yang cuma unik per-browser).
- *  - db.sales.syncRows(...) (fungsi ASLI, sudah ada di HTML utama, murni
- *    lokal) DIBUNGKUS di sini: setelah IndexedDB lokal berhasil ditulis,
- *    seluruh baris sales didorong (push) ke tabel `gamas_sales` di Supabase.
+ *    2 device yang sama-sama offline lalu online lagi TIDAK bentrok id-nya.
+ *  - db.sales.syncRows(...) (fungsi ASLI, murni lokal) DIBUNGKUS di sini:
+ *    setelah IndexedDB lokal berhasil ditulis, seluruh baris sales didorong
+ *    (push) ke tabel `gamas_sales` di Supabase.
  *  - Saat file ini dimuat / dipanggil ulang, ia menarik (pull) data dari
- *    Supabase dan menulisnya ke IndexedDB lokal, lalu (kalau ada yang baru)
- *    memicu badge "Data baru masuk" yang sudah ada di UI.
- *  - Menghormati saklar Online/Offline (localStorage 'gm2026_sync_mode'):
- *    kalau mode 'offline', semua panggilan ke Supabase dilewati.
+ *    Supabase dan menulisnya ke IndexedDB lokal.
+ *  - Menghormati saklar Online/Offline (localStorage 'gm2026_sync_mode').
  *
- * PENTING — Ini implementasi baru, BUKAN pemulihan exact dari file lama
- * (file lama tidak tersedia). Sudah disesuaikan dengan struktur data & nama
- * fungsi yang benar-benar ada di HTML (LocalTable, db.sales, salesData,
- * tampilkanNotifDataBaru, dst), tapi tetap disarankan DIUJI dulu sebelum
- * dipakai produksi penuh — terutama uji dari 2 perangkat berbeda.
+ * ------------------------------------------------------------------------
+ * PERBAIKAN (v2) — mencegah data baru "hilang ketimpa" data lama:
+ * ------------------------------------------------------------------------
+ * Sebelumnya push ke Supabase tidak sepenuhnya "aman" terhadap refresh
+ * mendadak: kalau proses push per-baris terputus di tengah jalan, baris
+ * yang belum sempat terkirim bisa ketinggalan, lalu logika "hapus di server
+ * baris yang sudah tidak ada di lokal" atau pull berikutnya bisa membuat
+ * data lokal-vs-server tidak sinkron.
+ *
+ * Sekarang setiap baris lokal punya penanda `_dirty`:
+ *   - `_dirty = true`  -> baris ini belum dikonfirmasi tersimpan di server
+ *   - `_dirty = false` -> sudah dikonfirmasi tersimpan di server
+ * Sebelum pull otomatis jalan saat halaman dibuka, sistem coba push ulang
+ * dulu semua baris yang masih dirty. Pull tidak akan menimpa baris yang
+ * masih dirty (perubahan lokal yang belum sinkron selalu menang).
  */
 (function () {
     'use strict';
@@ -51,11 +57,24 @@
 
     function uuid() {
         if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
-        // fallback sederhana kalau browser lama
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
+    }
+
+    // Baris yang berhasil kekirim ke server dicatat di sini (per _uuid) agar
+    // bisa ditandai "clean" di IndexedDB lokal setelah push sukses.
+    async function markRowsClean(uuids) {
+        if (!uuids.length) return;
+        try {
+            const rows = await db.sales.toArray();
+            for (const row of rows) {
+                if (row._uuid && uuids.indexOf(row._uuid) !== -1 && row._dirty) {
+                    await db.sales.update(row.id, { _dirty: false });
+                }
+            }
+        } catch (e) { /* tidak fatal, coba lagi di sync berikutnya */ }
     }
 
     async function pushAllSales(rows) {
@@ -74,7 +93,8 @@
             const batch = payload.slice(i, i + CHUNK);
             try {
                 const { error } = await sb.from(TABLE).upsert(batch, { onConflict: 'uuid' });
-                if (error) console.warn('[GAMAS] Gagal push sales batch:', error.message);
+                if (error) { console.warn('[GAMAS] Gagal push sales batch:', error.message); continue; }
+                await markRowsClean(batch.map(function (b) { return b.uuid; }));
             } catch (e) { console.warn('[GAMAS] Gagal push sales batch:', e); }
         }
         // Hapus di server baris yang sudah tidak ada lagi secara lokal
@@ -92,6 +112,17 @@
         } catch (e) { console.warn('[GAMAS] Gagal bersihkan sales terhapus:', e); }
     }
 
+    // Coba push ulang semua baris yang masih ditandai dirty (mis. push
+    // sebelumnya terputus karena refresh) -- dipanggil sebelum pull jalan.
+    async function flushPendingPushes() {
+        if (isOfflineMode() || !client()) return;
+        try {
+            const rows = await db.sales.toArray();
+            const pending = rows.filter(function (r) { return r._dirty; });
+            if (pending.length) await pushAllSales(pending);
+        } catch (e) { console.warn('[GAMAS] Gagal flush pending pushes sales:', e); }
+    }
+
     async function pullSales() {
         const sb = client();
         if (!sb || isOfflineMode()) return false;
@@ -107,21 +138,27 @@
             let changed = false;
             for (const remote of remoteRows) {
                 const local = localByUuid[remote.uuid];
-                const remoteRow = Object.assign({}, remote.row_data, { _uuid: remote.uuid });
+
+                // JANGAN timpa baris yang masih ada perubahan lokal belum
+                // ke-push -- data lokal yang belum sinkron selalu menang.
+                if (local && local._dirty) continue;
+
+                const remoteRow = Object.assign({}, remote.row_data, { _uuid: remote.uuid, _dirty: false });
                 if (!local) {
                     await db.sales.add(remoteRow);
                     changed = true;
-                } else if (JSON.stringify(Object.assign({}, local, { id: undefined })) !==
-                    JSON.stringify(Object.assign({}, remoteRow, { id: undefined }))) {
+                } else if (JSON.stringify(Object.assign({}, local, { id: undefined, _dirty: undefined })) !==
+                    JSON.stringify(Object.assign({}, remoteRow, { id: undefined, _dirty: undefined }))) {
                     await db.sales.update(local.id, remoteRow);
                     changed = true;
                 }
             }
 
             // Hapus lokal baris yang sudah dihapus di server oleh perangkat lain
+            // (kecuali baris lokal itu sendiri masih dirty / belum sinkron).
             const remoteUuids = remoteRows.map(function (r) { return r.uuid; });
             for (const local of localRows) {
-                if (local._uuid && remoteUuids.indexOf(local._uuid) === -1) {
+                if (local._uuid && !local._dirty && remoteUuids.indexOf(local._uuid) === -1) {
                     await db.sales.delete(local.id);
                     changed = true;
                 }
@@ -133,16 +170,19 @@
     // --- Bungkus syncRows ASLI (murni lokal) supaya juga push ke cloud ---
     const _origSyncRows = db.sales.syncRows.bind(db.sales);
     db.sales.syncRows = async function (currentRows, docIdMap, snapshotMap) {
-        // Pastikan setiap baris punya _uuid stabil SEBELUM ditulis ke IndexedDB,
-        // supaya id yang sama dipakai baik di lokal maupun di Supabase.
+        // Pastikan setiap baris punya _uuid stabil, dan tandai dirty=true
+        // SEBELUM ditulis ke IndexedDB, supaya kalau halaman di-refresh
+        // sebelum push selesai, baris ini tetap dikenali "belum sinkron"
+        // dan tidak akan ketimpa data lama saat pull berikutnya.
         currentRows.forEach(function (row) {
             if (!row._uuid) row._uuid = uuid();
+            row._dirty = true;
         });
         const result = await _origSyncRows(currentRows, docIdMap, snapshotMap);
-        // Dorong ke cloud tanpa memblokir UI lebih lama dari perlu; tetap
-        // di-await di sini supaya pemanggil (saveSalesData) tahu prosesnya
-        // selesai kalau mereka mau menunggu, tapi kegagalan cloud TIDAK
-        // menggagalkan penyimpanan lokal yang sudah berhasil di atas.
+        // Push DITUNGGU di sini supaya kalau user langsung refresh setelah
+        // simpan, data sudah (atau sedang beneran dicoba) tersimpan di
+        // server -- kegagalan cloud TIDAK menggagalkan penyimpanan lokal
+        // yang sudah berhasil di atas, baris akan dicoba lagi sync berikutnya.
         try {
             const freshRows = await db.sales.toArray();
             await pushAllSales(freshRows);
@@ -152,6 +192,7 @@
 
     async function runFullSync(silent) {
         if (isOfflineMode()) return { skipped: true };
+        await flushPendingPushes();
         const changed = await pullSales();
         if (changed && !silent && typeof tampilkanNotifDataBaru === 'function') {
             tampilkanNotifDataBaru('both');
@@ -159,13 +200,16 @@
         return { changed: changed };
     }
 
-    window.gamasSalesSync = { runFullSync: runFullSync, pullSales: pullSales, pushAllSales: pushAllSales };
+    window.gamasSalesSync = { runFullSync: runFullSync, pullSales: pullSales, pushAllSales: pushAllSales, flushPendingPushes: flushPendingPushes };
 
     // Cek pembaruan di latar belakang begitu halaman dibuka (tidak memblokir
-    // render awal yang tetap memakai data lokal seperti biasa).
+    // render awal yang tetap memakai data lokal seperti biasa). Push dulu
+    // baris yang masih dirty sebelum menarik data server.
     if (!isOfflineMode()) {
         setTimeout(function () {
-            pullSales().then(function (changed) {
+            flushPendingPushes().then(function () {
+                return pullSales();
+            }).then(function (changed) {
                 if (changed && typeof tampilkanNotifDataBaru === 'function') {
                     tampilkanNotifDataBaru('both');
                 }
