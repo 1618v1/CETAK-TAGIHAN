@@ -1920,6 +1920,17 @@
             color: #6b7280;
         }
         .sales-card-foot b { color: #374151; }
+        .sales-card-invoice-total {
+            margin-top: 6px;
+            padding: 4px 7px;
+            background: #eef6f0;
+            border: 1px solid #d3e8da;
+            border-radius: 6px;
+            font-size: 10.5px;
+            color: #14532d;
+            text-align: right;
+        }
+        .sales-card-invoice-total b { font-size: 12px; }
         .sales-card-empty {
             text-align: center;
             padding: 30px 10px;
@@ -5500,8 +5511,8 @@
             <div class="tab1-split-right">
                 <div class="table-wrap" style="height: 485px; max-height: 485px;" id="tab1TableWrap">
                     <table>
-                        <thead><tr><th style="width:26px;"><input type="checkbox" id="salesSelectAll" title="Pilih semua baris yang tampil"></th><th>Tanggal</th><th>No.Faktur</th><th>Produk</th><th class="num">Jumlah</th><th>Satuan</th><th class="num">Harga Jual</th><th class="num">Harga Beli</th><th class="num">Disc</th><th class="num">Total</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Pembayaran</th></tr></thead>
-                        <tbody id="salesTableBody"><tr><td colspan="15" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr></tbody>
+                        <thead><tr><th style="width:26px;"><input type="checkbox" id="salesSelectAll" title="Pilih semua baris yang tampil"></th><th>Tanggal</th><th>No.Faktur</th><th>Produk</th><th class="num">Jumlah</th><th>Satuan</th><th class="num">Harga Jual</th><th class="num">Harga Beli</th><th class="num">Disc</th><th class="num">Total</th><th class="num" title="Total keseluruhan untuk No.Faktur ini (dijumlah dari semua baris produk di faktur yang sama)">Total Faktur</th><th>Sales</th><th>Customer</th><th>Alamat</th><th>Pembayaran</th></tr></thead>
+                        <tbody id="salesTableBody"><tr><td colspan="16" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr></tbody>
                     </table>
                 </div>
                 <div class="sales-card-list" id="salesCardList" style="height:485px;"></div>
@@ -9913,6 +9924,11 @@
                 cardWarnClass = ' card-harga-confirmed';
                 hargaCardExtra = ` <button type="button" class="btn-kesepakatan-toggle" data-gidx="${gidx}" title="Kesepakatan Khusus — di bawah minimal (Rp ${fmtRp(hargaMinimal)}) tapi sudah dikonfirmasi. Klik untuk batalkan.">✅</button>`;
             }
+            // ---- Total Faktur: total keseluruhan No.Faktur ini (semua baris produk dijumlah) ----
+            const invKeyForTotalCard = normFaktur(r['No.Faktur']);
+            const invoiceTotalForCard = invKeyForTotalCard ? (salesInvoiceTotalMap.get(invKeyForTotalCard) || 0) : 0;
+            const totalFakturLine = invKeyForTotalCard ?
+                `<div class="sales-card-invoice-total">Total Faktur: <b>${fmtRp(invoiceTotalForCard)}</b></div>` : '';
             return `<div class="sales-card${salesRowsSelected.has(gidx) ? ' selected' : ''}${cardWarnClass}">
                     <div class="sales-card-top">
                         <div class="sales-card-top-left">
@@ -9927,6 +9943,7 @@
                         <span class="sales-card-total">${fmtRp(total)}</span>
                         <span class="sales-card-badges"><span class="badge ${isCash ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span>${statusBadge}</span>
                     </div>
+                    ${totalFakturLine}
                     <div class="sales-card-foot">
                         <span><b>${escapeHtml(r.Sales || '-')}</b></span>
                         <span>${escapeHtml(r.Customer || '-')}</span>
@@ -10101,6 +10118,11 @@
         }
 
         let salesInvoiceFirstIdx = new Set();
+        // Map No.Faktur (dinormalisasi) -> total nilai keseluruhan faktur itu
+        // (dijumlah dari semua baris produk di faktur yang sama). Dipakai di
+        // tabel (kolom "Total Faktur") & kartu supaya saat penagihan langsung
+        // kelihatan total per faktur, bukan cuma total per baris produk.
+        let salesInvoiceTotalMap = new Map();
 
         function buildSalesRowHtml(r, salesIndexMap) {
             const jumlah = parseNumber(r.Jumlah);
@@ -10139,7 +10161,13 @@
                 classList.push('row-minus-unpaired');
             }
             if (classList.length) rowClass = ` class="${classList.join(' ')}"`;
-            return `<tr${rowClass}><td>${invoiceCheckbox}</td><td>${fmtTanggal(r.Tanggal)}</td><td>${noFakturSafe ? `<a href="#" class="tab1-faktur-link" data-faktur="${noFakturSafe}" style="${fakturLinkStyle}"${fakturLinkTitle}>${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : ''}</td><td>${r.Produk || ''}</td><td class="num">${jumlah}</td><td>${r.Satuan || ''}</td><td class="num">${fmtRp(harga)}${hargaJualCellExtra}</td><td class="num">${hargaBeli !== null ? fmtRp(hargaBeli) : '-'}</td><td class="num">${fmtRp(disc)}</td><td class="num">${fmtRp(total)}</td><td>${r.Sales || ''}</td><td>${r.Customer || ''}</td><td>${r.Alamat || ''}</td><td><span class="badge ${r.Pembayaran === 'Cash' ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span></td></tr>`;
+            // ---- Total Faktur: total keseluruhan No.Faktur ini (semua baris produk dijumlah) ----
+            const invKeyForTotal = normFaktur(r['No.Faktur']);
+            const invoiceTotalForRow = invKeyForTotal ? (salesInvoiceTotalMap.get(invKeyForTotal) || 0) : 0;
+            const totalFakturCell = invKeyForTotal ?
+                `<td class="num" style="font-weight:700;color:#0f5132;">${fmtRp(invoiceTotalForRow)}</td>` :
+                `<td class="num">-</td>`;
+            return `<tr${rowClass}><td>${invoiceCheckbox}</td><td>${fmtTanggal(r.Tanggal)}</td><td>${noFakturSafe ? `<a href="#" class="tab1-faktur-link" data-faktur="${noFakturSafe}" style="${fakturLinkStyle}"${fakturLinkTitle}>${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : ''}</td><td>${r.Produk || ''}</td><td class="num">${jumlah}</td><td>${r.Satuan || ''}</td><td class="num">${fmtRp(harga)}${hargaJualCellExtra}</td><td class="num">${hargaBeli !== null ? fmtRp(hargaBeli) : '-'}</td><td class="num">${fmtRp(disc)}</td><td class="num">${fmtRp(total)}</td>${totalFakturCell}<td>${r.Sales || ''}</td><td>${r.Customer || ''}</td><td>${r.Alamat || ''}</td><td><span class="badge ${r.Pembayaran === 'Cash' ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span></td></tr>`;
         }
 
         function renderSalesTableWindow() {
@@ -10172,10 +10200,10 @@
             const botH = (total - end) * salesRowHeightPx;
             let html = '';
             if (topH > 0) html +=
-                `<tr class="vrow-spacer" aria-hidden="true" style="height:${topH}px;"><td colspan="15" style="padding:0;border:0;background:transparent;"></td></tr>`;
+                `<tr class="vrow-spacer" aria-hidden="true" style="height:${topH}px;"><td colspan="16" style="padding:0;border:0;background:transparent;"></td></tr>`;
             for (let i = start; i < end; i++) html += buildSalesRowHtml(rows[i], salesIndexMap);
             if (botH > 0) html +=
-                `<tr class="vrow-spacer" aria-hidden="true" style="height:${botH}px;"><td colspan="15" style="padding:0;border:0;background:transparent;"></td></tr>`;
+                `<tr class="vrow-spacer" aria-hidden="true" style="height:${botH}px;"><td colspan="16" style="padding:0;border:0;background:transparent;"></td></tr>`;
             tbody.innerHTML = html;
 
             // Kalibrasi ulang tinggi baris dari baris NYATA yang baru dirender.
@@ -10242,6 +10270,16 @@
                 const disc = parseNumber(r.Disc);
                 r.Total = (jumlah * harga) - disc;
             });
+            // Hitung total per No.Faktur (semua baris produk pada faktur yang
+            // sama dijumlahkan) supaya kolom "Total Faktur" di tabel & kartu
+            // selalu menampilkan nilai total penagihan faktur tsb, bukan cuma
+            // total per baris produk.
+            salesInvoiceTotalMap = new Map();
+            rows.forEach(r => {
+                const key = normFaktur(r['No.Faktur']);
+                if (!key) return;
+                salesInvoiceTotalMap.set(key, (salesInvoiceTotalMap.get(key) || 0) + parseNumber(r.Total));
+            });
             renderTab1SplitList(rows);
             const displayRows = tab1SelectedFaktur ?
                 rows.filter(r => normFaktur(r['No.Faktur']) === normFaktur(tab1SelectedFaktur)) : rows;
@@ -10261,8 +10299,8 @@
             salesVirtualCardStatusMap = new Map();
             if (displayRows.length === 0) {
                 tbody.innerHTML = tab1SelectedFaktur ?
-                    '<tr><td colspan="15" class="empty-msg">📂 Faktur ini tidak ada di data yang tampil saat ini.</td></tr>' :
-                    '<tr><td colspan="15" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr>';
+                    '<tr><td colspan="16" class="empty-msg">📂 Faktur ini tidak ada di data yang tampil saat ini.</td></tr>' :
+                    '<tr><td colspan="16" class="empty-msg">📂 Tidak ada data. Import Excel atau Tambah transaksi.</td></tr>';
                 salesVirtualDisplayRows = [];
                 salesVirtualIndexMap = salesIndexMap;
                 if (tab1ViewMode === 'card') renderSalesCards([], new Map(), new Map());
@@ -15781,6 +15819,12 @@ html.gamas-dark-mode .sales-card-total {
 
 html.gamas-dark-mode .sales-card-foot {
     color: #a8b3c4 !important;
+}
+
+html.gamas-dark-mode .sales-card-invoice-total {
+    background: #10241a !important;
+    border-color: #1f3d2c !important;
+    color: #6fd39a !important;
 }
 
 html.gamas-dark-mode .sales-card-foot b {
