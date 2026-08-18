@@ -6450,7 +6450,7 @@
     <div style="padding:10px 18px;color:#64748b;font-size:11px;">Faktur bulan sebelumnya yang setelah diperiksa ke seluruh riwayat pembayaran masih berstatus TITIP/TITIP BG.</div>
     <div style="overflow:auto;padding:0 18px 16px;">
       <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:11px;min-width:760px;">
-        <thead><tr style="background:#f1f5f9;"><th style="padding:7px;text-align:left;">No Faktur</th><th style="padding:7px;text-align:left;">Tgl Faktur</th><th style="padding:7px;text-align:left;">Toko</th><th style="padding:7px;text-align:right;">Tagihan</th><th style="padding:7px;text-align:left;">JT</th><th style="padding:7px;text-align:center;">Status</th></tr></thead>
+        <thead><tr style="background:#f1f5f9;"><th style="padding:7px;text-align:left;">No Faktur</th><th style="padding:7px;text-align:left;">Tgl Titip</th><th style="padding:7px;text-align:left;">Toko</th><th style="padding:7px;text-align:right;">Tagihan</th><th style="padding:7px;text-align:left;">JT</th><th style="padding:7px;text-align:center;">Status</th></tr></thead>
         <tbody id="t2PrevTitipBody"></tbody>
       </table>
     </div>
@@ -7953,7 +7953,10 @@
             document.getElementById('badgeCash').textContent = data.length;
 
             // TITIP BULAN SEBELUMNYA:
-            // Gunakan bulan faktur/transaksi, bukan bulan uang masuk.
+            // Disamakan dengan App1 (Analisa Tagihan): gunakan bulan PEMBAYARAN TITIP tercatat
+            // di Data Uang Masuk (r.month = bulan grup Uang Masuk tempat baris ini dicatat),
+            // BUKAN bulan faktur/tagihan diterbitkan. Baris CASH DROPPING diabaikan karena
+            // bukan piutang pelanggan (sama seperti isCashDroppingRow() di App1).
             // Status dicek ulang terhadap SELURUH riwayat pembayaran faktur.
             // Rentang: mulai Juni 2026 (titik awal pelacakan) sampai SEBELUM bulan berjalan.
             // Tidak lagi dibatasi cuma "1 bulan ke belakang" -- jadi begitu bulan berganti
@@ -7976,12 +7979,14 @@
             }
             const prevMonthsSet = new Set(prevMonths);
             const prevMonth = prevMonths.length ? prevMonths[0] : TITIP_TRACK_START_MONTH; // untuk kompatibilitas label lama
-            const prevInvoices = new Map();
+            const prevInvoices = new Map(); // no_faktur -> baris pembayaran titip paling awal (untuk sorting/tanggal tampil)
             t2AllRows.forEach(r => {
+                if (r.section !== 'PIUTANG TEMPO') return; // bukan piutang pelanggan, lewati
                 const no = normFaktur(r.faktur);
                 if (!no || t2IsCorrected(no)) return;
-                if (!prevMonthsSet.has(t2InvoiceMonth(r))) return;
-                if (!prevInvoices.has(no)) prevInvoices.set(no, r);
+                if (!prevMonthsSet.has(r.month)) return; // r.month = bulan Data Uang Masuk (bulan pembayaran)
+                const existing = prevInvoices.get(no);
+                if (!existing || t2DateSortKey(r) < t2DateSortKey(existing)) prevInvoices.set(no, r);
             });
             const prevTitip = Array.from(prevInvoices.values()).filter(r => {
                 const st = t2GetFinalInvoiceStatus(r.faktur);
@@ -8024,7 +8029,7 @@
                 const safeNo = t2Esc(no).replace(/'/g, "\\'");
                 return '<tr style="border-top:1px solid #e2e8f0;cursor:pointer;" onclick="t2OpenFakturModal(\'' + safeNo + '\')" title="Klik untuk melihat seluruh riwayat pembayaran">' +
                     '<td style="padding:7px;font-weight:700;color:var(--t2-accent);text-decoration:underline;">' + t2Esc(no) + '</td>' +
-                    '<td style="padding:7px;">' + t2Esc(r.tglFaktur || r.date || '-') + '</td>' +
+                    '<td style="padding:7px;">' + t2Esc(r.date || r.tglFaktur || '-') + '</td>' +
                     '<td style="padding:7px;">' + t2Esc(r.toko) + '</td>' +
                     '<td style="padding:7px;text-align:right;">' + t2Fmt(r.tagihan) + '</td>' +
                     '<td style="padding:7px;">' + t2Esc(r.jt || '-') + '</td>' +
