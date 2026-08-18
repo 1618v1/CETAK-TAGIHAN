@@ -8388,6 +8388,22 @@
                 corrBox.innerHTML = '';
             }
 
+            // "Bayar Pertama"/"Bayar Terakhir" seharusnya menampilkan tanggal
+            // pembayaran NYATA. Untuk baris TITIP BG yang belum cair, tanggal
+            // yang tercatat (r.date) hanyalah tanggal BG diterima/dicatat,
+            // BUKAN tanggal uang benar-benar masuk -- jadi menampilkannya di
+            // sini menyesatkan. Untuk baris seperti itu, tampilkan tanggal
+            // JATUH TEMPO BG-nya (kolom JT) sebagai gantinya, atau "—" kalau
+            // JT tidak diketahui.
+            const firstIsBgBelumCair = first.section === 'PIUTANG TEMPO' && t2IsBg(first.ket) && !t2IsBgCair(first.ket);
+            const lastIsBgBelumCair = last.section === 'PIUTANG TEMPO' && t2IsBg(last.ket) && !t2IsBgCair(last.ket);
+            const bayarPertamaVal = firstIsBgBelumCair
+                ? (first.jt ? t2Esc(first.jt) + ' <span style="opacity:.65;font-weight:400;">(JT BG)</span>' : '—')
+                : t2Esc(first.date);
+            const bayarTerakhirVal = lastIsBgBelumCair
+                ? (last.jt ? t2Esc(last.jt) + ' <span style="opacity:.65;font-weight:400;">(JT BG)</span>' : '—')
+                : t2Esc(last.date);
+
             document.getElementById('t2ModalStats').innerHTML =
                 '<div class="t2-modal-stat"><div class="t2-l">Tagihan (max)</div><div class="t2-v">' + t2Fmt(maxTagihan) + '</div></div>' +
                 '<div class="t2-modal-stat"><div class="t2-l">Total Bayar</div><div class="t2-v" style="color:var(--t2-green)">' + t2Fmt(totalBayar) + '</div></div>' +
@@ -8396,8 +8412,8 @@
                 '<div class="t2-modal-stat"><div class="t2-l">Sisa</div><div class="t2-v" style="color:' + (sisa > 0 ? 'var(--t2-yellow)' : 'var(--t2-green)') + '">' + (sisa > 0 ? t2Fmt(sisa) : '0 (lunas)') + '</div></div>' +
                 '<div class="t2-modal-stat"><div class="t2-l">Status</div><div class="t2-v">' + t2StatusBadge(statusKeseluruhan) + '</div></div>' +
                 '<div class="t2-modal-stat"><div class="t2-l">x Bayar</div><div class="t2-v">' + rows.length + 'x</div></div>' +
-                '<div class="t2-modal-stat"><div class="t2-l">Bayar pertama</div><div class="t2-v" style="font-size:0.8rem">' + t2Esc(first.date) + '</div></div>' +
-                '<div class="t2-modal-stat"><div class="t2-l">Bayar terakhir</div><div class="t2-v" style="font-size:0.8rem">' + t2Esc(last.date) + '</div></div>';
+                '<div class="t2-modal-stat"><div class="t2-l">Bayar pertama</div><div class="t2-v" style="font-size:0.8rem">' + bayarPertamaVal + '</div></div>' +
+                '<div class="t2-modal-stat"><div class="t2-l">Bayar terakhir</div><div class="t2-v" style="font-size:0.8rem">' + bayarTerakhirVal + '</div></div>';
 
             let kumulatifBayar = 0;
             document.getElementById('t2ModalHist').innerHTML = rows.map(r => {
