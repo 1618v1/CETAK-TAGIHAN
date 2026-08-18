@@ -12332,6 +12332,21 @@
                     list = rec ? (rec.data || []) : [];
                 } catch (e) { list = cashDataMap[bulanKey] || []; }
                 const existingIdx = list.findIndex(it => normDDMM(it.tanggal) === normDDMM(tanggalKey));
+
+                // PENJAGA PENTING: kalau form Input Harian untuk tanggal ini BENAR-BENAR
+                // KOSONG (tidak ada satupun baris Piutang Tempo / Cash Dropping) TAPI
+                // tanggal ini SUDAH punya data tersimpan di Data Uang Masuk (misalnya
+                // hasil upload Excel/TL), JANGAN timpa dengan data kosong. Tanpa penjagaan
+                // ini, fitur "simpan otomatis diam-diam" yang jalan setiap kali pindah
+                // tab/app (lihat visibilitychange di bawah) bisa MENGHAPUS data yang baru
+                // saja diupload untuk tanggal yang sama dengan tanggal aktif di Input
+                // Harian, padahal Input Harian-nya sendiri tidak sedang diisi apa-apa.
+                const formKosong = piutangDetail.length === 0 && cashDroppingDetail.length === 0;
+                if (formKosong && existingIdx >= 0) {
+                    cashDataMap[bulanKey] = list;
+                    return;
+                }
+
                 if (existingIdx >= 0) list[existingIdx] = dayRecord; else list.push(dayRecord);
                 cashDataMap[bulanKey] = list;
 
