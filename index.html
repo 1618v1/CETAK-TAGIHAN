@@ -4878,6 +4878,8 @@
         #tab9 .t2-muted { color: var(--t2-muted); }
         #tab9 .t2-faktur-link { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
         #tab9 .t2-faktur-link:hover { opacity: .8; }
+        #tab9 .t2-bg-anomaly-warn { cursor: help; font-size: 0.75rem; }
+        #tab9 .t2-num-anomaly { background: #fff7e6; color: #b45309; border-radius: 4px; cursor: help; }
         #tab9 .t2-daily-panel {
             background: var(--t2-card);
             border: 1px solid var(--t2-border);
@@ -7669,6 +7671,15 @@
             const k = String(ket || '').toUpperCase();
             return t2IsBg(k) && k.includes('CAIR');
         }
+        // Anomali data: baris TITIP BG (belum cair) semestinya belum ada uang
+        // masuk sama sekali, tapi kadang data mentah (Excel/Uang Masuk) sudah
+        // terisi nilai Cash/TF -- biasanya typo/sisa input. Kita TIDAK mengubah
+        // angkanya (biar user yang cek & benahi sumber datanya), cukup ditandai
+        // dengan ⚠️ di tabel Ringkasan Harian & daftar baris supaya kelihatan.
+        function t2RowHasBgCashAnomaly(r) {
+            if (!(r.section === 'PIUTANG TEMPO' && t2IsBg(r.ket) && !t2IsBgCair(r.ket))) return false;
+            return ((r.minyakCash || 0) + (r.minyakTf || 0) + (r.rupaCash || 0) + (r.rupaTf || 0)) > 0;
+        }
         function t2PaymentAmount(r) {
             // Titip BG belum cair = belum menjadi pembayaran nyata.
             if (r.section === 'PIUTANG TEMPO' && t2IsBg(r.ket) && !t2IsBgCair(r.ket)) return 0;
@@ -8107,7 +8118,7 @@
             }
             const map = {};
             rows.forEach(r => {
-                if (!map[r.sheet]) map[r.sheet] = { sheet: r.sheet, date: r.date, month: r.month, count: 0, piutang: 0, dropping: 0, tagihan: 0, cash: 0, tf: 0 };
+                if (!map[r.sheet]) map[r.sheet] = { sheet: r.sheet, date: r.date, month: r.month, count: 0, piutang: 0, dropping: 0, tagihan: 0, cash: 0, tf: 0, hasBgAnomaly: false };
                 const g = map[r.sheet];
                 g.count++;
                 g.tagihan += r.tagihan || 0;
@@ -8115,6 +8126,7 @@
                 const bt = (r.minyakTf || 0) + (r.rupaTf || 0);
                 g.cash += bc; g.tf += bt;
                 if (r.section === 'PIUTANG TEMPO') g.piutang += bc + bt; else g.dropping += bc + bt;
+                if (t2RowHasBgCashAnomaly(r)) g.hasBgAnomaly = true;
             });
             const list = Object.values(map).sort((a, b) => {
                 const ka = (a.month || '') + '-' + a.date, kb = (b.month || '') + '-' + b.date;
@@ -8127,13 +8139,16 @@
             body.innerHTML = list.map(g => {
                 const total = g.cash + g.tf;
                 sumC += g.count; sumP += g.piutang; sumD += g.dropping; sumT += g.tagihan; sumCash += g.cash; sumTf += g.tf;
+                const anomalyWarn = g.hasBgAnomaly
+                    ? ' <span class="t2-bg-anomaly-warn" title="Ada baris TITIP BG (belum cair) di tanggal ini yang tercatat sudah ada nilai Cash/TF. Biasanya typo/sisa input di Excel — cek & benahi sumber datanya.">⚠️</span>'
+                    : '';
                 return '<tr data-sheet="' + t2Esc(g.sheet) + '" onclick="t2FilterBySheet(\'' + t2Esc(g.sheet).replace(/'/g, "\\'") + '\')">' +
-                    '<td><strong>' + t2Esc(g.date) + '</strong> <span class="t2-muted" style="font-size:0.65rem">' + t2Esc(t2BulanLabel(g.month)) + '</span></td>' +
+                    '<td><strong>' + t2Esc(g.date) + '</strong> <span class="t2-muted" style="font-size:0.65rem">' + t2Esc(t2BulanLabel(g.month)) + '</span>' + anomalyWarn + '</td>' +
                     '<td class="t2-num">' + g.count.toLocaleString('id-ID') + '</td>' +
-                    '<td class="t2-num">' + t2Fmt(g.piutang) + '</td>' +
+                    '<td class="t2-num' + (g.hasBgAnomaly ? ' t2-num-anomaly' : '') + '">' + t2Fmt(g.piutang) + '</td>' +
                     '<td class="t2-num">' + t2Fmt(g.dropping) + '</td>' +
                     '<td class="t2-num">' + t2Fmt(g.tagihan) + '</td>' +
-                    '<td class="t2-num">' + t2Fmt(g.cash) + '</td>' +
+                    '<td class="t2-num' + (g.hasBgAnomaly ? ' t2-num-anomaly' : '') + '">' + t2Fmt(g.cash) + '</td>' +
                     '<td class="t2-num">' + t2Fmt(g.tf) + '</td>' +
                     '<td class="t2-num"><strong>' + t2Fmt(total) + '</strong></td>' +
                 '</tr>';
@@ -8166,6 +8181,9 @@
             const corrected = !!r.isCorrected;
             const facturCls = corrected ? 't2-faktur-link t2-corrected-faktur' : 't2-faktur-link';
             const facturTitle = corrected ? 'Hasil koreksi manual — klik untuk melihat catatan' : 'Lihat riwayat pembayaran';
+            const bgAnomaly = t2RowHasBgCashAnomaly(r);
+            const anomalyCellCls = bgAnomaly ? ' t2-num-anomaly' : '';
+            const anomalyTitle = 'Data mentah aneh: baris ini berstatus TITIP BG (belum cair) tapi sudah tercatat ada nilai Cash/TF. Biasanya typo/sisa input di Excel — cek & benahi sumber datanya.';
             return '<tr>' +
                 '<td>' + t2Esc(r.date) + '<br><span class="t2-muted" style="font-size:0.7rem">' + t2Esc(r.monthLabel) + '</span></td>' +
                 '<td>' + t2SectionBadge(r.section) + '</td>' +
@@ -8174,15 +8192,16 @@
                 '<td class="t2-toko">' + t2Esc(r.toko) + '</td>' +
                 '<td class="t2-muted">' + t2Esc(r.alamat) + '</td>' +
                 '<td class="t2-num">' + t2Fmt(r.tagihan) + '</td>' +
-                '<td class="t2-num">' + t2Fmt(r.minyakCash) + '</td>' +
-                '<td class="t2-num">' + t2Fmt(r.minyakTf) + '</td>' +
-                '<td class="t2-num">' + t2Fmt(r.rupaCash) + '</td>' +
-                '<td class="t2-num">' + t2Fmt(r.rupaTf) + '</td>' +
+                '<td class="t2-num' + anomalyCellCls + '"' + (bgAnomaly ? ' title="' + anomalyTitle + '"' : '') + '>' + t2Fmt(r.minyakCash) + '</td>' +
+                '<td class="t2-num' + anomalyCellCls + '"' + (bgAnomaly ? ' title="' + anomalyTitle + '"' : '') + '>' + t2Fmt(r.minyakTf) + '</td>' +
+                '<td class="t2-num' + anomalyCellCls + '"' + (bgAnomaly ? ' title="' + anomalyTitle + '"' : '') + '>' + t2Fmt(r.rupaCash) + '</td>' +
+                '<td class="t2-num' + anomalyCellCls + '"' + (bgAnomaly ? ' title="' + anomalyTitle + '"' : '') + '>' + t2Fmt(r.rupaTf) + '</td>' +
                 '<td style="white-space:nowrap">' +
                     (isSame ? '<span class="t2-muted">' + t2Esc(lastDate) + '</span>' : '<strong style="color:var(--t2-accent)">' + t2Esc(lastDate) + '</strong>') +
                 '</td>' +
                 '<td>' + t2StatusBadge(r.status) +
                     (r.ket && r.ket !== r.status && r.ket !== '—' ? '<br><span class="t2-muted" style="font-size:0.7rem">' + t2Esc(r.ket) + '</span>' : '') +
+                    (bgAnomaly ? '<br><span class="t2-bg-anomaly-warn" title="' + anomalyTitle + '">⚠️ cek data</span>' : '') +
                 '</td>' +
             '</tr>';
         }
