@@ -7955,15 +7955,32 @@
             // TITIP BULAN SEBELUMNYA:
             // Gunakan bulan faktur/transaksi, bukan bulan uang masuk.
             // Status dicek ulang terhadap SELURUH riwayat pembayaran faktur.
+            // Rentang: mulai Juni 2026 (titik awal pelacakan) sampai SEBELUM bulan berjalan.
+            // Tidak lagi dibatasi cuma "1 bulan ke belakang" -- jadi begitu bulan berganti
+            // (Juni->Juli->Agustus->dst), semua faktur titip dari bulan-bulan lama tetap
+            // ikut kecek, tidak ada yang "lolos" hanya karena sudah lewat lebih dari sebulan.
             const now = new Date();
             const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-            const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            const prevMonth = prevDate.getFullYear() + '-' + String(prevDate.getMonth() + 1).padStart(2, '0');
+            const TITIP_TRACK_START_MONTH = '2026-06'; // 1 Juni 2026
+            function t2MonthKeyToNum(mk) {
+                const p = String(mk || '').split('-');
+                return p.length < 2 ? null : (parseInt(p[0], 10) * 12 + parseInt(p[1], 10));
+            }
+            const startNum = t2MonthKeyToNum(TITIP_TRACK_START_MONTH);
+            const currentNum = t2MonthKeyToNum(currentMonth);
+            const prevMonths = [];
+            for (let n = startNum; n < currentNum; n++) {
+                const y = Math.floor((n - 1) / 12);
+                const m = n - y * 12;
+                prevMonths.push(y + '-' + String(m).padStart(2, '0'));
+            }
+            const prevMonthsSet = new Set(prevMonths);
+            const prevMonth = prevMonths.length ? prevMonths[0] : TITIP_TRACK_START_MONTH; // untuk kompatibilitas label lama
             const prevInvoices = new Map();
             t2AllRows.forEach(r => {
                 const no = normFaktur(r.faktur);
                 if (!no || t2IsCorrected(no)) return;
-                if (t2InvoiceMonth(r) !== prevMonth) return;
+                if (!prevMonthsSet.has(t2InvoiceMonth(r))) return;
                 if (!prevInvoices.has(no)) prevInvoices.set(no, r);
             });
             const prevTitip = Array.from(prevInvoices.values()).filter(r => {
@@ -7972,10 +7989,14 @@
             });
             window.t2PreviousTitipInvoices = prevTitip.map(r => normFaktur(r.faktur));
             window.t2PreviousTitipMonth = prevMonth;
+            window.t2PreviousTitipMonths = prevMonths;
             const prevEl = document.getElementById('t2sPrevTitip');
             const prevPeriodEl = document.getElementById('t2PrevTitipPeriod');
             if (prevEl) prevEl.textContent = prevTitip.length.toLocaleString('id-ID');
-            if (prevPeriodEl) prevPeriodEl.textContent = t2BulanLabel(prevMonth) + ' · dicek sampai ' + t2BulanLabel(currentMonth);
+            const prevRangeLabel = prevMonths.length <= 1
+                ? t2BulanLabel(prevMonths[0] || prevMonth)
+                : t2BulanLabel(prevMonths[0]) + ' - ' + t2BulanLabel(prevMonths[prevMonths.length - 1]);
+            if (prevPeriodEl) prevPeriodEl.textContent = prevRangeLabel + ' · dicek sampai ' + t2BulanLabel(currentMonth);
         }
         window.t2OpenPrevTitipModal = function() {
             const modal = document.getElementById('t2PrevTitipModal');
@@ -7990,8 +8011,12 @@
                 map.set(no, r);
             });
             const rows = Array.from(map.values()).sort((a,b) => t2DateSortKey(a)-t2DateSortKey(b));
+            const months = window.t2PreviousTitipMonths || [window.t2PreviousTitipMonth || ''];
+            const rangeLabel = months.length <= 1
+                ? t2BulanLabel(months[0] || '')
+                : t2BulanLabel(months[0]) + ' - ' + t2BulanLabel(months[months.length - 1]);
             sub.textContent = rows.length
-                ? (t2BulanLabel(window.t2PreviousTitipMonth || '') + ' · ' + rows.length.toLocaleString('id-ID') + ' faktur masih titip, sudah dicek ke seluruh riwayat pembayaran')
+                ? (rangeLabel + ' · ' + rows.length.toLocaleString('id-ID') + ' faktur masih titip, sudah dicek ke seluruh riwayat pembayaran')
                 : 'Tidak ada titip bulan sebelumnya yang masih tertinggal.';
             body.innerHTML = rows.length ? rows.map(r => {
                 const no = normFaktur(r.faktur);
