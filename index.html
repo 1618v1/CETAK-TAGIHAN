@@ -4675,11 +4675,10 @@
         .t2-transaksi-breakdown { display:flex; gap:7px; margin-top:3px; flex-wrap:wrap; font-size:0.58rem; color:var(--t2-muted); }
         .t2-transaksi-breakdown span { white-space:nowrap; }
         .t2-transaksi-breakdown b { color:var(--t2-text); font-size:0.66rem; }
-        .t2-prev-titip-card { --t2-dot:#d97706; cursor:pointer; }
-        .t2-prev-titip-card:hover { border-color:#f59e0b; }
+
 .t2-mini-cards {
             display: grid;
-            grid-template-columns: repeat(8, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             margin-bottom: 12px;
         }
@@ -4744,35 +4743,18 @@
             opacity: .6;
         }
         #tab9 .t2-mini:nth-child(1) { --t2-dot: #0284c7; }
-        #tab9 .t2-mini:nth-child(2) { --t2-dot: #7c3aed; }
-        #tab9 .t2-mini:nth-child(3) { --t2-dot: #db2777; }
-        #tab9 .t2-mini:nth-child(4) { --t2-dot: var(--t2-green); }
-        #tab9 .t2-mini:nth-child(5) { --t2-dot: var(--t2-yellow); }
-        #tab9 .t2-mini:nth-child(6) { --t2-dot: #ea580c; }
-        #tab9 .t2-mini:nth-child(7) { --t2-dot: #2563eb; }
-        #tab9 .t2-mini:nth-child(8) { --t2-dot: #b45309; }
-        #tab9 .t2-mini:nth-child(9) { --t2-dot: #0d9488; }
+        #tab9 .t2-mini:nth-child(2) { --t2-dot: var(--t2-green); }
+        #tab9 .t2-mini:nth-child(3) { --t2-dot: var(--t2-yellow); }
+        #tab9 .t2-mini:nth-child(4) { --t2-dot: #ea580c; }
         html.gamas-dark-mode #tab9 .t2-mini:nth-child(1) { --t2-dot: #38bdf8; }
-        html.gamas-dark-mode #tab9 .t2-mini:nth-child(2) { --t2-dot: #a78bfa; }
-        html.gamas-dark-mode #tab9 .t2-mini:nth-child(3) { --t2-dot: #f472b6; }
-        html.gamas-dark-mode #tab9 .t2-mini:nth-child(6) { --t2-dot: #fb923c; }
-        html.gamas-dark-mode #tab9 .t2-mini:nth-child(7) { --t2-dot: #60a5fa; }
-        html.gamas-dark-mode #tab9 .t2-mini:nth-child(8) { --t2-dot: #fcd34d; }
-        html.gamas-dark-mode #tab9 .t2-mini:nth-child(9) { --t2-dot: #2dd4bf; }
-        #tab9 .t2-mini-titip-card { position: relative; }
-        #tab9 .t2-titip-bg-alert {
-            margin-top: 2px;
-            font-size: 8px;
-            line-height: 1.15;
-            font-weight: 800;
-            color: #a16207;
-            white-space: nowrap;
-        }
+        html.gamas-dark-mode #tab9 .t2-mini:nth-child(2) { --t2-dot: #4ade80; }
+        html.gamas-dark-mode #tab9 .t2-mini:nth-child(3) { --t2-dot: #fbbf24; }
+        html.gamas-dark-mode #tab9 .t2-mini:nth-child(4) { --t2-dot: #fb923c; }
         @media (max-width: 1100px) {
-            #tab9 .t2-mini-cards { grid-template-columns: repeat(5, 1fr); }
+            #tab9 .t2-mini-cards { grid-template-columns: repeat(4, 1fr); }
         }
         @media (max-width: 700px) {
-            #tab9 .t2-mini-cards { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+            #tab9 .t2-mini-cards { grid-template-columns: repeat(2, 1fr); gap: 5px; }
             #tab9 .t2-mini .t2-v { font-size: .82rem; }
         }
         @media (max-width: 480px) {
@@ -6275,25 +6257,9 @@
                     <span>Dropping <b id="t2sDropping">0</b></span>
                 </div>
             </div>
-            <div class="t2-mini"><div class="t2-l">Lunas</div><div class="t2-v" id="t2sLunas">0</div></div>
-            <div class="t2-mini t2-mini-titip-card">
-                <div class="t2-l">Titip</div>
-                <div class="t2-v" id="t2sTitip">0</div>
-                <div id="t2TitipBgAlert" class="t2-titip-bg-alert" style="display:none;" title="Masih ada faktur TITIP BG yang belum cair">🟡 ADA TITIP BG</div>
-            </div>
             <div class="t2-mini"><div class="t2-l">Cash</div><div class="t2-v" id="t2sCash">Rp 0</div></div>
             <div class="t2-mini"><div class="t2-l">Transfer</div><div class="t2-v" id="t2sTransfer">Rp 0</div></div>
             <div class="t2-mini"><div class="t2-l">Total</div><div class="t2-v" id="t2sTotalBayar">Rp 0</div></div>
-            <div class="t2-mini t2-prev-titip-card" id="t2PrevTitipCard" role="button" tabindex="0" title="Klik untuk melihat titip bulan sebelumnya yang sudah dicek ke seluruh riwayat pembayaran">
-                <div class="t2-l">Titip Bulan Sebelumnya</div>
-                <div class="t2-v" id="t2sPrevTitip">0</div>
-                <div id="t2PrevTitipPeriod" style="font-size:0.62rem;color:var(--t2-muted);margin-top:2px;">Belum ada</div>
-            </div>
-            <div class="t2-mini t2-anomali-card" id="t2AnomaliCard" role="button" tabindex="0" title="Klik untuk melihat data anomali dan cek manual">
-                <div class="t2-l">Data Anomali</div>
-                <div class="t2-v" id="t2sAnomali">0</div>
-                <div style="font-size:0.62rem;color:var(--t2-muted);margin-top:2px;">Klik untuk cek</div>
-            </div>
         </div>
 
         <div class="t2-search-bar">
@@ -6434,54 +6400,10 @@
             </div>
         </div>
 
-        <!-- Modal DATA ANOMALI -->
-        <style id="t2-prev-titip-detail-modal-fix">
-/* Modal detail faktur harus berada DI ATAS modal Titip Bulan Sebelumnya. */
+        <style id="t2-faktur-modal-z">
 #t2FakturModal { z-index: 10060 !important; }
 #t2FakturModal.t2-open { display:flex !important; }
 </style>
-
-<div id="t2PrevTitipModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10050;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#fff;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.25);width:min(1100px,96vw);max-height:88vh;overflow:hidden;display:flex;flex-direction:column;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #e2e8f0;">
-      <div><div style="font-size:16px;font-weight:700;color:#1e293b;">Titip Bulan Sebelumnya</div><div id="t2PrevTitipSub" style="font-size:11px;color:#64748b;margin-top:3px;"></div></div>
-      <button type="button" class="btn btn-outline" onclick="t2ClosePrevTitipModal()">Tutup</button>
-    </div>
-    <div style="padding:10px 18px;color:#64748b;font-size:11px;">Faktur bulan sebelumnya yang setelah diperiksa ke seluruh riwayat pembayaran masih berstatus TITIP/TITIP BG.</div>
-    <div style="overflow:auto;padding:0 18px 16px;">
-      <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:11px;min-width:760px;">
-        <thead><tr style="background:#f1f5f9;"><th style="padding:7px;text-align:left;">No Faktur</th><th style="padding:7px;text-align:left;">Tgl Titip</th><th style="padding:7px;text-align:left;">Toko</th><th style="padding:7px;text-align:right;">Tagihan</th><th style="padding:7px;text-align:left;">JT</th><th style="padding:7px;text-align:center;">Status</th></tr></thead>
-        <tbody id="t2PrevTitipBody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<div class="t2-modal-backdrop" id="t2AnomaliModal" onclick="if(event.target===this) t2CloseAnomaliModal()">
-            <div class="t2-modal" style="max-width:1250px;">
-                <div class="t2-modal-h">
-                    <div>
-                        <h2>Data Anomali</h2>
-                        <div class="t2-sub" id="t2AnomaliSub">Faktur yang belum terpetakan ke status akhir yang valid</div>
-                    </div>
-                    <button class="t2-modal-close" onclick="t2CloseAnomaliModal()">Tutup</button>
-                </div>
-                <div class="t2-modal-body">
-                    <div id="t2AnomaliCount" class="t2-anomali-count"></div>
-                    <div class="t2-anomali-list">
-                        <table class="t2-anomali-table">
-                            <thead><tr>
-                                <th>No Faktur</th><th>Tgl</th><th>Bagian</th><th>Sales</th><th>Toko</th><th>Tagihan</th><th>Status</th><th class="t2-anomali-ket-head">Alasan Anomali</th><th style="min-width:230px;">Catatan Pemeriksaan</th><th>Aksi</th>
-                            </tr></thead>
-                            <tbody id="t2AnomaliBody"></tbody>
-                        </table>
-                    </div>
-                    <p class="t2-muted" style="font-size:0.75rem;margin-top:10px;">
-                        Data ini hanya untuk pemeriksaan manual. Jika setelah diperiksa faktur ternyata benar/oke, isi <strong>Catatan Pemeriksaan</strong> lalu klik <strong>Koreksi → LUNAS</strong>. Faktur akan masuk status LUNAS dan nomor faktur ditampilkan <strong>merah</strong> sebagai tanda hasil koreksi.
-                    </p>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- ======= TAB 10 – PENGELUARAN ======= -->
@@ -7890,57 +7812,6 @@
             if (totalSmall) totalSmall.textContent = fakturUnik.size.toLocaleString('id-ID');
             document.getElementById('t2sPiutang').textContent = piutangCount.toLocaleString('id-ID');
             document.getElementById('t2sDropping').textContent = droppingCount.toLocaleString('id-ID');
-            // STATUS KARTU dihitung berdasarkan NO FAKTUR UNIK dan STATUS AKHIR.
-            // Penting: satu faktur bisa memiliki beberapa baris pembayaran di bulan berbeda.
-            // Karena itu kartu tidak lagi menghitung jumlah baris TITIP/LUNAS.
-            // Kumpulan faktur tetap mengikuti filter bulan/bagian yang sedang dipilih,
-            // tetapi status akhirnya diperiksa terhadap SELURUH riwayat t2AllRows.
-            const invoiceKeys = new Set(data.map(r => normFaktur(r.faktur)).filter(Boolean));
-            let finalLunasCount = 0;
-            let finalTitipCount = 0;
-            let finalTitipBgCount = 0;
-            invoiceKeys.forEach(no => {
-                const stFinal = t2GetFinalInvoiceStatus(no);
-                if (stFinal === 'LUNAS') finalLunasCount++;
-                else if (stFinal === 'TITIP BG') finalTitipBgCount++;
-                else if (stFinal === 'TITIP') finalTitipCount++;
-            });
-            document.getElementById('t2sLunas').textContent = finalLunasCount.toLocaleString('id-ID');
-            document.getElementById('t2sTitip').textContent = (finalTitipCount + finalTitipBgCount).toLocaleString('id-ID');
-            const titipBgAlert = document.getElementById('t2TitipBgAlert');
-            if (titipBgAlert) {
-                const adaTitipBg = finalTitipBgCount > 0;
-                titipBgAlert.style.display = adaTitipBg ? 'block' : 'none';
-                titipBgAlert.title = adaTitipBg
-                    ? 'Masih ada ' + finalTitipBgCount.toLocaleString('id-ID') + ' faktur TITIP BG yang belum cair'
-                    : 'Tidak ada TITIP BG yang belum cair';
-            }
-            // DATA ANOMALI = faktur unik yang belum memperoleh status akhir yang valid.
-            // Status valid: LUNAS, TITIP, atau TITIP BG.
-            // Jika satu faktur memiliki beberapa baris, cukup dianggap terpetakan
-            // bila salah satu/seluruh barisnya sudah mempunyai status valid.
-            const invoiceStatusMap = new Map();
-            data.forEach(r => {
-                const no = normFaktur(r.faktur);
-                if (!no || t2IsCorrected(no)) return;
-                if (!invoiceStatusMap.has(no)) invoiceStatusMap.set(no, new Set());
-                const st = String(r.status || '').toUpperCase().trim();
-                if (st) invoiceStatusMap.get(no).add(st);
-            });
-            const anomalyInvoices = [];
-            invoiceStatusMap.forEach((statuses, no) => {
-                const valid = statuses.has('LUNAS') || statuses.has('TITIP') || statuses.has('TITIP BG');
-                if (!valid) anomalyInvoices.push(no);
-            });
-            window.t2CurrentAnomalyInvoices = anomalyInvoices;
-            const dataAnomali = anomalyInvoices.length;
-            const anomalyEl = document.getElementById('t2sAnomali');
-            if (anomalyEl) {
-                anomalyEl.textContent = dataAnomali.toLocaleString('id-ID');
-                anomalyEl.title = dataAnomali > 0
-                    ? dataAnomali.toLocaleString('id-ID') + ' faktur belum terpetakan — klik untuk cek manual'
-                    : 'Tidak ditemukan data anomali';
-            }
             let cash = 0, tf = 0;
             data.forEach(r => {
                 if (r.section === 'PIUTANG TEMPO' && t2IsBg(r.ket) && !t2IsBgCair(r.ket)) return;
@@ -7951,194 +7822,7 @@
             document.getElementById('t2sTransfer').textContent = fmtRp(tf);
             document.getElementById('t2sTotalBayar').textContent = fmtRp(cash + tf);
             document.getElementById('badgeCash').textContent = data.length;
-
-            // TITIP BULAN SEBELUMNYA:
-            // Disamakan dengan App1 (Analisa Tagihan): gunakan bulan PEMBAYARAN TITIP tercatat
-            // di Data Uang Masuk (r.month = bulan grup Uang Masuk tempat baris ini dicatat),
-            // BUKAN bulan faktur/tagihan diterbitkan. Baris CASH DROPPING diabaikan karena
-            // bukan piutang pelanggan (sama seperti isCashDroppingRow() di App1).
-            // Status dicek ulang terhadap SELURUH riwayat pembayaran faktur.
-            // Rentang: mulai Juni 2026 (titik awal pelacakan) sampai SEBELUM bulan berjalan.
-            // Tidak lagi dibatasi cuma "1 bulan ke belakang" -- jadi begitu bulan berganti
-            // (Juni->Juli->Agustus->dst), semua faktur titip dari bulan-bulan lama tetap
-            // ikut kecek, tidak ada yang "lolos" hanya karena sudah lewat lebih dari sebulan.
-            const now = new Date();
-            const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-            const TITIP_TRACK_START_MONTH = '2026-06'; // 1 Juni 2026
-            function t2MonthKeyToNum(mk) {
-                const p = String(mk || '').split('-');
-                return p.length < 2 ? null : (parseInt(p[0], 10) * 12 + parseInt(p[1], 10));
-            }
-            const startNum = t2MonthKeyToNum(TITIP_TRACK_START_MONTH);
-            const currentNum = t2MonthKeyToNum(currentMonth);
-            const prevMonths = [];
-            for (let n = startNum; n < currentNum; n++) {
-                const y = Math.floor((n - 1) / 12);
-                const m = n - y * 12;
-                prevMonths.push(y + '-' + String(m).padStart(2, '0'));
-            }
-            const prevMonthsSet = new Set(prevMonths);
-            const prevMonth = prevMonths.length ? prevMonths[0] : TITIP_TRACK_START_MONTH; // untuk kompatibilitas label lama
-            const prevInvoices = new Map(); // no_faktur -> baris pembayaran titip paling awal (untuk sorting/tanggal tampil)
-            t2AllRows.forEach(r => {
-                if (r.section !== 'PIUTANG TEMPO') return; // bukan piutang pelanggan, lewati
-                const no = normFaktur(r.faktur);
-                if (!no || t2IsCorrected(no)) return;
-                if (!prevMonthsSet.has(r.month)) return; // r.month = bulan Data Uang Masuk (bulan pembayaran)
-                const existing = prevInvoices.get(no);
-                if (!existing || t2DateSortKey(r) < t2DateSortKey(existing)) prevInvoices.set(no, r);
-            });
-            const prevTitip = Array.from(prevInvoices.values()).filter(r => {
-                const st = t2GetFinalInvoiceStatus(r.faktur);
-                return st === 'TITIP' || st === 'TITIP BG';
-            });
-            window.t2PreviousTitipInvoices = prevTitip.map(r => normFaktur(r.faktur));
-            window.t2PreviousTitipMonth = prevMonth;
-            window.t2PreviousTitipMonths = prevMonths;
-            const prevEl = document.getElementById('t2sPrevTitip');
-            const prevPeriodEl = document.getElementById('t2PrevTitipPeriod');
-            if (prevEl) prevEl.textContent = prevTitip.length.toLocaleString('id-ID');
-            const prevRangeLabel = prevMonths.length <= 1
-                ? t2BulanLabel(prevMonths[0] || prevMonth)
-                : t2BulanLabel(prevMonths[0]) + ' - ' + t2BulanLabel(prevMonths[prevMonths.length - 1]);
-            if (prevPeriodEl) prevPeriodEl.textContent = prevRangeLabel + ' · dicek sampai ' + t2BulanLabel(currentMonth);
         }
-        window.t2OpenPrevTitipModal = function() {
-            const modal = document.getElementById('t2PrevTitipModal');
-            const body = document.getElementById('t2PrevTitipBody');
-            const sub = document.getElementById('t2PrevTitipSub');
-            if (!modal || !body) return;
-            const nos = new Set(window.t2PreviousTitipInvoices || []);
-            const map = new Map();
-            t2AllRows.forEach(r => {
-                const no = normFaktur(r.faktur);
-                if (!no || !nos.has(no) || map.has(no)) return;
-                map.set(no, r);
-            });
-            const rows = Array.from(map.values()).sort((a,b) => t2DateSortKey(a)-t2DateSortKey(b));
-            const months = window.t2PreviousTitipMonths || [window.t2PreviousTitipMonth || ''];
-            const rangeLabel = months.length <= 1
-                ? t2BulanLabel(months[0] || '')
-                : t2BulanLabel(months[0]) + ' - ' + t2BulanLabel(months[months.length - 1]);
-            sub.textContent = rows.length
-                ? (rangeLabel + ' · ' + rows.length.toLocaleString('id-ID') + ' faktur masih titip, sudah dicek ke seluruh riwayat pembayaran')
-                : 'Tidak ada titip bulan sebelumnya yang masih tertinggal.';
-            body.innerHTML = rows.length ? rows.map(r => {
-                const no = normFaktur(r.faktur);
-                const st = t2GetFinalInvoiceStatus(no);
-                const safeNo = t2Esc(no).replace(/'/g, "\\'");
-                return '<tr style="border-top:1px solid #e2e8f0;cursor:pointer;" onclick="t2OpenFakturModal(\'' + safeNo + '\')" title="Klik untuk melihat seluruh riwayat pembayaran">' +
-                    '<td style="padding:7px;font-weight:700;color:var(--t2-accent);text-decoration:underline;">' + t2Esc(no) + '</td>' +
-                    '<td style="padding:7px;">' + t2Esc(r.date || r.tglFaktur || '-') + '</td>' +
-                    '<td style="padding:7px;">' + t2Esc(r.toko) + '</td>' +
-                    '<td style="padding:7px;text-align:right;">' + t2Fmt(r.tagihan) + '</td>' +
-                    '<td style="padding:7px;">' + t2Esc(r.jt || '-') + '</td>' +
-                    '<td style="padding:7px;text-align:center;">' + t2StatusBadge(st) + '</td></tr>';
-            }).join('') : '<tr><td colspan="6" style="padding:28px;text-align:center;color:#94a3b8;">Tidak ada data.</td></tr>';
-            modal.style.display='flex';
-        };
-        window.t2ClosePrevTitipModal = function() {
-            const modal = document.getElementById('t2PrevTitipModal');
-            if (modal) modal.style.display='none';
-        };
-
-        window.t2OpenAnomaliModal = function() {
-            const modal = document.getElementById('t2AnomaliModal');
-            const body = document.getElementById('t2AnomaliBody');
-            const countEl = document.getElementById('t2AnomaliCount');
-            if (!modal || !body) return;
-
-            // Gunakan filter bulan/bagian saat ini, tetapi jangan terpengaruh filter Status,
-            // supaya data anomali tetap bisa ditemukan untuk pemeriksaan manual.
-            const mon = document.getElementById('t2FilterMonth')?.value || 'all';
-            const sec = document.getElementById('t2FilterSection')?.value || 'all';
-            let base = t2AllRows.slice();
-            if (mon !== 'all') base = base.filter(r => r.month === mon);
-            if (sec !== 'all') base = base.filter(r => r.section === sec);
-
-            const map = new Map();
-            base.forEach(r => {
-                const no = normFaktur(r.faktur);
-                if (!no) return;
-                if (!map.has(no)) map.set(no, []);
-                map.get(no).push(r);
-            });
-            const anomalies = [];
-            map.forEach((rows, no) => {
-                const statuses = new Set(rows.map(r => String(r.status || '').toUpperCase().trim()).filter(Boolean));
-                if (t2IsCorrected(no)) return;
-                const valid = statuses.has('LUNAS') || statuses.has('TITIP') || statuses.has('TITIP BG');
-                if (!valid) {
-                    rows.sort((a,b) => t2DateSortKey(a) - t2DateSortKey(b));
-                    anomalies.push({ no, rows });
-                }
-            });
-
-            anomalies.sort((a,b) => t2DateSortKey(a.rows[0]) - t2DateSortKey(b.rows[0]));
-            const monthLabel = mon === 'all' ? 'Semua Bulan' : (base[0]?.monthLabel || mon);
-            document.getElementById('t2AnomaliSub').textContent = 'Pemeriksaan manual · ' + monthLabel + (sec !== 'all' ? ' · ' + sec : '');
-            countEl.textContent = 'Ditemukan ' + anomalies.length.toLocaleString('id-ID') + ' faktur anomali.';
-
-            if (!anomalies.length) {
-                body.innerHTML = '<tr><td colspan="10" class="t2-anomali-empty">Tidak ada data anomali pada filter ini.</td></tr>';
-            } else {
-                body.innerHTML = anomalies.map(item => {
-                    const r = item.rows[0];
-                    const detail = item.rows.length > 1 ? ' (' + item.rows.length + ' baris)' : '';
-                    const statuses = Array.from(new Set(item.rows.map(x => String(x.status || '').trim().toUpperCase()).filter(Boolean)));
-                    let alasan = '';
-                    if (!statuses.length) {
-                        alasan = 'Tidak ada status pada data ini. Menurut logika aplikasi, faktur harus memiliki status akhir LUNAS, TITIP, atau TITIP BG agar tidak masuk DATA ANOMALI.';
-                    } else {
-                        alasan = 'Status ' + statuses.join(', ') + ' belum termasuk status akhir yang dikenali aplikasi (LUNAS, TITIP, atau TITIP BG), sehingga faktur belum terpetakan.';
-                        if (statuses.includes('TF')) {
-                            alasan += ' TF hanya menunjukkan cara pembayaran transfer, bukan status akhir faktur.';
-                        }
-                    }
-                    const safeNo = t2Esc(item.no).replace(/'/g, "\\'");
-                    const monthForNote = t2Esc(r.monthLabel || mon);
-                    const noteId = 't2Note_' + item.no;
-                    const jsCall = 't2KoreksiLunas(' + JSON.stringify(item.no) + ',' + JSON.stringify(noteId) + ',' + JSON.stringify(r.monthLabel || mon) + ')';
-                    return '<tr>' +
-                        '<td><strong>' + t2Esc(item.no) + '</strong>' + detail + '</td>' +
-                        '<td>' + t2Esc(r.date) + '</td>' +
-                        '<td>' + t2SectionBadge(r.section) + '</td>' +
-                        '<td>' + t2Esc(r.sales) + '</td>' +
-                        '<td>' + t2Esc(r.toko) + '</td>' +
-                        '<td class="t2-num">' + t2Fmt(r.tagihan) + '</td>' +
-                        '<td>' + t2StatusBadge(r.status || '—') + '</td>' +
-                        '<td class="t2-anomali-ket">' + t2Esc(alasan) + '</td>' +
-                        '<td><textarea class="t2-anomali-note" id="' + t2Esc(noteId) + '" placeholder="Tulis hasil pemeriksaan... misalnya: TF sudah benar, pembayaran valid."></textarea></td>' +
-                        '<td><div class="t2-anomali-action"><button type="button" onclick="' + t2Esc(jsCall) + '">✓ Koreksi → LUNAS</button></div></td>' +
-                    '</tr>';
-                }).join('');
-            }
-            modal.style.display = 'flex';
-        };
-        window.t2KoreksiLunas = function(faktur, noteId, monthLabel) {
-            const noteEl = document.getElementById(noteId);
-            const note = noteEl ? noteEl.value.trim() : '';
-            if (!note) {
-                if (noteEl) { noteEl.focus(); noteEl.style.borderColor = '#dc2626'; }
-                alert('Catatan pemeriksaan wajib diisi sebelum faktur dipindahkan ke LUNAS.');
-                return;
-            }
-            const no = normFaktur(faktur);
-            if (!no) return;
-            t2SetCorrection(no, note, monthLabel);
-            // Bangun ulang status seluruh data agar faktur langsung masuk LUNAS.
-            t2AllRows = t2BuildAllRows();
-            t2DoSearch();
-            t2OpenAnomaliModal();
-            // Tandai bahwa koreksi berhasil tanpa mengganggu user dengan popup panjang.
-            const countEl = document.getElementById('t2AnomaliCount');
-            if (countEl) countEl.textContent += '  ·  Faktur ' + no + ' sudah dikoreksi menjadi LUNAS.';
-        };
-        window.t2CloseAnomaliModal = function() {
-            const modal = document.getElementById('t2AnomaliModal');
-            if (modal) modal.style.display = 'none';
-        };
-
         function t2BuildDailySummary(rows) {
             const body = document.getElementById('t2DailyBody');
             const panel = document.getElementById('t2DailyPanel');
@@ -8351,22 +8035,6 @@
             document.getElementById('t2FilterStatus').value = 'all';
             t2DoSearch();
         }
-        (function initT2AnomaliCard() {
-            const card = document.getElementById('t2AnomaliCard');
-            if (!card) return;
-            card.addEventListener('click', window.t2OpenAnomaliModal);
-            card.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.t2OpenAnomaliModal(); }
-            });
-        })();
-
-        (function initT2PrevTitipCard() {
-            const card = document.getElementById('t2PrevTitipCard');
-            if (!card) return;
-            card.addEventListener('click', window.t2OpenPrevTitipModal);
-            card.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.t2OpenPrevTitipModal(); } });
-        })();
-
         window.t2FilterBySheet = function(sheet) {
             document.getElementById('t2SearchInput').value = '';
             const row = t2AllRows.find(r => r.sheet === sheet);
@@ -16658,21 +16326,6 @@ html.gamas-dark-mode .data-baru-notif {
         }
         html.gamas-dark-mode .gamas-bg-due-item strong { color: #fcd34d; }
 
-        .t2-anomali-card { cursor:pointer; user-select:none; }
-        .t2-anomali-card:focus { outline:2px solid var(--t2-accent); outline-offset:2px; }
-        .t2-anomali-card:hover { transform:translateY(-1px); }
-        .t2-anomali-list { max-height:58vh; overflow:auto; border:1px solid #e2e8f0; border-radius:10px; }
-        .t2-anomali-table { width:100%; border-collapse:collapse; font-size:0.76rem; min-width:1040px; table-layout:auto; }
-        .t2-anomali-table th { position:sticky; top:0; background:#f1f5f9; color:#64748b; text-align:left; padding:8px; border-bottom:1px solid #dbe3ec; z-index:1; white-space:nowrap; }
-        .t2-anomali-table td { padding:8px; border-bottom:1px solid #edf2f7; vertical-align:top; }
-        .t2-anomali-table .t2-anomali-ket-head { min-width:330px; width:38%; }
-        .t2-anomali-table .t2-anomali-ket { min-width:330px; line-height:1.45; white-space:normal; }
-        .t2-anomali-empty { padding:28px 12px; text-align:center; color:#64748b; }
-        .t2-anomali-count { font-size:0.78rem; color:#64748b; margin-bottom:10px; }
-        .t2-anomali-note { width:100%; min-width:210px; min-height:58px; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:7px; padding:7px 8px; font:inherit; font-size:0.74rem; resize:vertical; background:#fff; color:#334155; }
-        .t2-anomali-action { display:flex; flex-direction:column; gap:6px; min-width:135px; }
-        .t2-anomali-action button { border:0; border-radius:7px; padding:7px 9px; font-size:0.72rem; font-weight:700; cursor:pointer; background:#15803d; color:#fff; }
-        .t2-anomali-action button:hover { filter:brightness(.95); }
         .t2-corrected-faktur { color:#dc2626 !important; font-weight:800; text-decoration:underline; text-decoration-color:#dc2626; text-underline-offset:2px; }
         .t2-correction-note-box { margin:10px 0 0; padding:10px 12px; border:1px solid #fecaca; background:#fff7f7; border-radius:8px; color:#7f1d1d; font-size:.78rem; line-height:1.45; }
         .t2-correction-note-box strong { color:#b91c1c; }
