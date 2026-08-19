@@ -22,6 +22,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 100 100&#39;%3E%3Crect width=&#39;100&#39; height=&#39;100&#39; rx=&#39;20&#39; fill=&#39;%232d3748&#39;/%3E%3Crect x=&#39;22&#39; y=&#39;55&#39; width=&#39;14&#39; height=&#39;28&#39; rx=&#39;3&#39; fill=&#39;%23f59e0b&#39;/%3E%3Crect x=&#39;43&#39; y=&#39;38&#39; width=&#39;14&#39; height=&#39;45&#39; rx=&#39;3&#39; fill=&#39;%233b82f6&#39;/%3E%3Crect x=&#39;64&#39; y=&#39;22&#39; width=&#39;14&#39; height=&#39;61&#39; rx=&#39;3&#39; fill=&#39;%2310b981&#39;/%3E%3C/svg%3E">
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js">
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         /* ===== CSS LENGKAP ===== */
@@ -6988,10 +6989,164 @@
         }
 
         // ================================================================
-        // PENYIMPANAN: murni IndexedDB lokal di browser ini, tanpa server/
-        // backend/koneksi apapun. Semua indikator "sinkron ke server" dan
-        // badge status koneksi sudah dihapus karena tidak relevan lagi.
+        // PENYIMPANAN: SUPABASE (cloud), supaya data sinkron & bisa dilihat
+        // dari device manapun -- bukan lagi IndexedDB lokal per-browser.
         // ================================================================
+        const SUPABASE_URL = 'https://nabuvwpeamlkrtrddgod.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_LC9XwfBeBwRdw-Tahyvjkg_YN9bqV1j';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: false }
+        });
+
+        // SupabaseTable meniru PERSIS API yang dipakai kode di bawah
+        // (add/bulkAdd/toArray/count/clear/delete/update/where().equals().first()/
+        // syncRows), supaya SEMUA pemanggilan db.<tabel>.<method> di file ini
+        // tetap jalan tanpa diubah -- hanya "mesin" penyimpanannya yang diganti
+        // dari IndexedDB menjadi tabel Supabase.
+        //
+        // - 'sales' dipetakan ke tabel Supabase yang SUDAH ADA: gamas_sales
+        //   (kolom PK: uuid, kolom data: row_data jsonb, updated_at)
+        // - tabel lain (cashIncome, printHistory, trash, inputHarian,
+        //   pengeluaran) dipetakan ke SATU tabel generik gamas_store,
+        //   dibedakan lewat kolom 'collection'. Lihat instruksi SQL yang
+        //   perlu dijalankan di Supabase (dikirim terpisah dari kode ini).
+        class SupabaseTable {
+            constructor(namaLogis, opts) {
+                this.namaLogis = namaLogis;
+                this.sbTable = opts.sbTable;
+                this.idCol = opts.idCol || 'id';
+                this.useCollection = !!opts.useCollection;
+            }
+            _base() { return supabaseClient.from(this.sbTable); }
+            _withCollection(q) { return this.useCollection ? q.eq('collection', this.namaLogis) : q; }
+            _flatten(rec) {
+                const out = Object.assign({}, rec.row_data || {});
+                out.id = rec[this.idCol];
+                return out;
+            }
+            _payload(obj) {
+                const p = { row_data: obj, updated_at: new Date().toISOString() };
+                if (this.useCollection) p.collection = this.namaLogis;
+                return p;
+            }
+            async add(obj) {
+                let q = this._base().insert(this._payload(obj)).select(this.idCol).single();
+                const { data, error } = await q;
+                if (error) throw error;
+                return data[this.idCol];
+            }
+            async bulkAdd(arr) {
+                if (!arr || !arr.length) return;
+                const rows = arr.map(o => this._payload(o));
+                for (let i = 0; i < rows.length; i += 500) {
+                    const { error } = await this._base().insert(rows.slice(i, i + 500));
+                    if (error) throw error;
+                }
+            }
+            async toArray() {
+                let all = [], from = 0;
+                const PAGE = 1000;
+                for (;;) {
+                    let q = this._withCollection(this._base().select(this.idCol + ',row_data'));
+                    const { data, error } = await q.range(from, from + PAGE - 1);
+                    if (error) throw error;
+                    if (!data || !data.length) break;
+                    all = all.concat(data.map(rec => this._flatten(rec)));
+                    if (data.length < PAGE) break;
+                    from += PAGE;
+                }
+                return all;
+            }
+            async count() {
+                let q = this._withCollection(this._base().select(this.idCol, { count: 'exact', head: true }));
+                const { count, error } = await q;
+                if (error) throw error;
+                return count || 0;
+            }
+            async clear() {
+                let q = this._withCollection(this._base().delete());
+                q = q.not(this.idCol, 'is', null);
+                const { error } = await q;
+                if (error) throw error;
+            }
+            async delete(id) {
+                const { error } = await this._base().delete().eq(this.idCol, id);
+                if (error) throw error;
+            }
+            async update(id, changes) {
+                const { data: existing, error: e1 } = await this._base().select('row_data').eq(this.idCol, id).single();
+                if (e1) throw e1;
+                const merged = Object.assign({}, existing.row_data, changes);
+                delete merged.id;
+                const { error } = await this._base().update({ row_data: merged, updated_at: new Date().toISOString() }).eq(this.idCol, id);
+                if (error) throw error;
+            }
+            where(field) {
+                return {
+                    equals: (value) => ({
+                        first: async () => {
+                            let q = this._withCollection(this._base().select(this.idCol + ',row_data'));
+                            q = q.eq('row_data->>' + field, String(value)).limit(1);
+                            const { data, error } = await q;
+                            if (error) throw error;
+                            if (!data || !data.length) return undefined;
+                            return this._flatten(data[0]);
+                        }
+                    })
+                };
+            }
+            // Sama seperti versi LocalTable: hanya kirim baris yang benar-benar
+            // baru/berubah/dihapus (dibanding docIdMap/snapshotMap terakhir).
+            async syncRows(currentRows, docIdMap, snapshotMap) {
+                const stillPresentIds = new Set();
+                const toAdd = [], toUpdate = [], toDeleteIds = [];
+                currentRows.forEach(row => {
+                    const id = docIdMap.get(row);
+                    if (!id) { toAdd.push(row); }
+                    else {
+                        stillPresentIds.add(id);
+                        const prevJSON = snapshotMap.get(id);
+                        const curJSON = JSON.stringify(row);
+                        if (prevJSON !== curJSON) toUpdate.push({ id, row });
+                    }
+                });
+                snapshotMap.forEach((_, id) => { if (!stillPresentIds.has(id)) toDeleteIds.push(id); });
+
+                if (toAdd.length) {
+                    for (let i = 0; i < toAdd.length; i += 500) {
+                        const chunk = toAdd.slice(i, i + 500);
+                        const payloadRows = chunk.map(row => this._payload(row));
+                        const { data, error } = await this._base().insert(payloadRows).select(this.idCol);
+                        if (error) throw error;
+                        data.forEach((rec, idx) => {
+                            const row = chunk[idx];
+                            docIdMap.set(row, rec[this.idCol]);
+                            snapshotMap.set(rec[this.idCol], JSON.stringify(row));
+                        });
+                    }
+                }
+                if (toUpdate.length) {
+                    for (let i = 0; i < toUpdate.length; i += 200) {
+                        const chunk = toUpdate.slice(i, i + 200);
+                        await Promise.all(chunk.map(async ({ id, row }) => {
+                            const { error } = await this._base().update(this._payload(row)).eq(this.idCol, id);
+                            if (error) throw error;
+                            snapshotMap.set(id, JSON.stringify(row));
+                        }));
+                    }
+                }
+                if (toDeleteIds.length) {
+                    for (let i = 0; i < toDeleteIds.length; i += 200) {
+                        const chunk = toDeleteIds.slice(i, i + 200);
+                        const { error } = await this._base().delete().in(this.idCol, chunk);
+                        if (error) throw error;
+                        chunk.forEach(id => snapshotMap.delete(id));
+                    }
+                }
+                return { added: toAdd.length, updated: toUpdate.length, deleted: toDeleteIds.length };
+            }
+        }
+
         const NAMA_TABEL = ['sales', 'cashIncome', 'printHistory', 'trash', 'inputHarian', 'pengeluaran'];
 
         function buatDb() {
@@ -6999,8 +7154,9 @@
                 version: function() { return { stores: function() { return { upgrade: function() {} }; } }; },
                 transaction: async function(mode, table, fn) { return await fn(); }
             };
-            NAMA_TABEL.forEach(nama => {
-                obj[nama] = new LocalTable(nama);
+            obj.sales = new SupabaseTable('sales', { sbTable: 'gamas_sales', idCol: 'uuid', useCollection: false });
+            ['cashIncome', 'printHistory', 'trash', 'inputHarian', 'pengeluaran'].forEach(nama => {
+                obj[nama] = new SupabaseTable(nama, { sbTable: 'gamas_store', idCol: 'id', useCollection: true });
             });
             return obj;
         }
@@ -14732,7 +14888,7 @@
         }
     </script>
 
-    <!-- Supabase/GitHub sync sudah dihapus -- aplikasi 100% offline/lokal (IndexedDB/localStorage). -->
+    <!-- Data sinkron ke Supabase (cloud) -- bisa dibuka & terlihat sama dari device manapun. -->
 </div><!-- /#darkWrap -->
 
 <button id="darkModeToggleBtn" title="Ganti Tampilan Terang/Gelap" aria-label="Ganti Tampilan Terang/Gelap">
