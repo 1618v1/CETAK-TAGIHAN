@@ -86,12 +86,31 @@
         } catch (e) { console.warn('[GAMAS] Gagal flush pending pushes pengeluaran:', e); }
     }
 
+    // Jaga-jaga: select() Supabase kepotong maks 1000 baris kalau tidak
+    // di-.range(). Data pengeluaran normalnya 1 baris/bulan (jauh di bawah
+    // 1000), tapi paging tetap dipasang di sini supaya aman kalau suatu
+    // saat strukturnya berubah jadi lebih granular.
+    const PAGE_SIZE = 1000;
+    async function fetchAllRows(sb, columns) {
+        let all = [];
+        let from = 0;
+        while (true) {
+            const to = from + PAGE_SIZE - 1;
+            const { data, error } = await sb.from(TABLE).select(columns).range(from, to);
+            if (error) throw error;
+            if (!data || !data.length) break;
+            all = all.concat(data);
+            if (data.length < PAGE_SIZE) break;
+            from += PAGE_SIZE;
+        }
+        return all;
+    }
+
     async function pullFromCloud() {
         const sb = client();
         if (!sb || isOfflineMode()) return false;
         try {
-            const { data: rows, error } = await sb.from(TABLE).select('bulan,data,tanggal,updated_at');
-            if (error) throw error;
+            const rows = await fetchAllRows(sb, 'bulan,data,tanggal,updated_at');
             if (!rows || !rows.length) return false;
 
             let changed = false;

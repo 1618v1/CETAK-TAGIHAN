@@ -63,6 +63,34 @@
         });
     }
 
+    // ------------------------------------------------------------------
+    // PERBAIKAN PENTING: Supabase/PostgREST membatasi HASIL SELECT ke
+    // maksimal 1000 baris per request kalau tidak eksplisit di-.range().
+    // Tabel gamas_sales sudah > 20.000 baris, jadi select() tanpa paging
+    // dulu hanya menarik ~1000 baris PERTAMA -- lalu kode di bawah yang
+    // "hapus baris lokal yang tidak ada di server" akan menganggap SEMUA
+    // baris lain (yang sebenarnya ada, cuma belum ketarik) sebagai baris
+    // yang sudah dihapus, dan MENGHAPUSNYA dari IndexedDB lokal (bahkan
+    // berisiko balik menghapusnya juga dari server lewat proses push
+    // berikutnya). Fungsi ini menarik SELURUH baris dengan looping per
+    // halaman (page) sampai benar-benar habis.
+    // ------------------------------------------------------------------
+    const PAGE_SIZE = 1000;
+    async function fetchAllRows(sb, columns) {
+        let all = [];
+        let from = 0;
+        while (true) {
+            const to = from + PAGE_SIZE - 1;
+            const { data, error } = await sb.from(TABLE).select(columns).range(from, to);
+            if (error) throw error;
+            if (!data || !data.length) break;
+            all = all.concat(data);
+            if (data.length < PAGE_SIZE) break; // halaman terakhir
+            from += PAGE_SIZE;
+        }
+        return all;
+    }
+
     // Baris yang berhasil kekirim ke server dicatat di sini (per _uuid) agar
     // bisa ditandai "clean" di IndexedDB lokal setelah push sukses.
     async function markRowsClean(uuids) {
@@ -98,16 +126,17 @@
             } catch (e) { console.warn('[GAMAS] Gagal push sales batch:', e); }
         }
         // Hapus di server baris yang sudah tidak ada lagi secara lokal
+        // (WAJIB pakai fetchAllRows -- select() biasa kepotong 1000 baris,
+        // yang kalau dipakai di sini bisa salah anggap ribuan baris valid
+        // sebagai "sudah tidak ada lokal" lalu ikut terhapus dari server).
         try {
             const localUuids = rows.map(function (r) { return r._uuid; });
-            const { data: remoteRows, error: selErr } = await sb.from(TABLE).select('uuid');
-            if (!selErr && remoteRows) {
-                const toDelete = remoteRows
-                    .map(function (r) { return r.uuid; })
-                    .filter(function (u) { return localUuids.indexOf(u) === -1; });
-                if (toDelete.length) {
-                    await sb.from(TABLE).delete().in('uuid', toDelete);
-                }
+            const remoteRows = await fetchAllRows(sb, 'uuid');
+            const toDelete = remoteRows
+                .map(function (r) { return r.uuid; })
+                .filter(function (u) { return localUuids.indexOf(u) === -1; });
+            if (toDelete.length) {
+                await sb.from(TABLE).delete().in('uuid', toDelete);
             }
         } catch (e) { console.warn('[GAMAS] Gagal bersihkan sales terhapus:', e); }
     }
@@ -127,8 +156,7 @@
         const sb = client();
         if (!sb || isOfflineMode()) return false;
         try {
-            const { data: remoteRows, error } = await sb.from(TABLE).select('uuid,row_data,updated_at');
-            if (error) throw error;
+            const remoteRows = await fetchAllRows(sb, 'uuid,row_data,updated_at');
             if (!remoteRows) return false;
 
             const localRows = await db.sales.toArray();
