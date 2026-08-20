@@ -388,11 +388,13 @@
 @media (max-width: 520px) { .rk-stats-bar { grid-template-columns: 1fr; } }
         .rk-stat-card {
             background: var(--rk-panel); border: 1px solid var(--rk-border); border-radius: 9px;
-            padding: 6px 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+            padding: 7px 12px; display: flex; flex-direction: column; align-items: flex-start;
+            justify-content: center; gap: 3px;
         }
-        .rk-stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--rk-text-dim); }
-        .rk-stat-value { font-size: 18px; font-weight: 700; color: var(--rk-accent-text); font-variant-numeric: tabular-nums; }
-        .rk-stat-sub { font-size: 10px; color: var(--rk-text-dim); }
+        .rk-stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--rk-text-dim); }
+        .rk-stat-value { font-size: 17px; font-weight: 700; color: var(--rk-accent-text); font-variant-numeric: tabular-nums; }
+        .rk-stat-rp { font-weight: 500; font-size: 0.8em; opacity: .7; margin-right: 5px; }
+        .rk-stat-sub { font-size: 9px; color: var(--rk-text-dim); opacity: .8; }
 
         /* Kartu pertama (Total Fitri) ditonjolkan dengan gradient solid,
            senada dengan gradient tab aktif & tombol di halaman lain. */
@@ -5283,8 +5285,6 @@
         <div class="rk-wrap">
             <div class="rk-header">
                 <div class="rk-logo-area">
-                    <h1>Ringkasan Cetak Tagihan</h1>
-                    <p>Rekap Bank Data Penjualan &middot; Tanpa Piutang</p>
                 </div>
                 <div class="rk-header-meta">
                     <div class="rk-meta-chip">Tanggal <b id="rkTanggalHariIni">-</b></div>
@@ -9851,12 +9851,14 @@
                 classList.push('row-minus-unpaired');
             }
             if (classList.length) rowClass = ` class="${classList.join(' ')}"`;
-            // ---- Total Faktur: total keseluruhan No.Faktur ini (semua baris produk dijumlah) ----
+            // ---- Total Faktur: HANYA ditampilkan di baris PALING ATAS dari
+            // No.Faktur yang sama (baris produk lain di faktur itu dikosongkan)
+            // supaya nominalnya tidak terlihat berulang-ulang per baris produk.
             const invKeyForTotal = normFaktur(r['No.Faktur']);
             const invoiceTotalForRow = invKeyForTotal ? (salesInvoiceTotalMap.get(invKeyForTotal) || 0) : 0;
-            const totalFakturCell = invKeyForTotal ?
-                `<td class="num" style="font-weight:700;color:#0f5132;">${fmtRp(invoiceTotalForRow)}</td>` :
-                `<td class="num">-</td>`;
+            const totalFakturCell = !invKeyForTotal ? `<td class="num">-</td>` :
+                isFirstInvoiceRow ? `<td class="num" style="font-weight:700;color:#0f5132;">${fmtRp(invoiceTotalForRow)}</td>` :
+                `<td class="num"></td>`;
             return `<tr${rowClass}><td>${invoiceCheckbox}</td><td>${fmtTanggal(r.Tanggal)}</td><td>${noFakturSafe ? `<a href="#" class="tab1-faktur-link" data-faktur="${noFakturSafe}" style="${fakturLinkStyle}"${fakturLinkTitle}>${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : ''}</td><td>${r.Produk || ''}</td><td class="num">${jumlah}</td><td>${r.Satuan || ''}</td><td class="num">${fmtRp(harga)}${hargaJualCellExtra}</td><td class="num">${hargaBeli !== null ? fmtRp(hargaBeli) : '-'}</td><td class="num">${fmtRp(disc)}</td><td class="num">${fmtRp(total)}</td>${totalFakturCell}<td>${r.Sales || ''}</td><td>${r.Customer || ''}</td><td>${r.Alamat || ''}</td><td><span class="badge ${r.Pembayaran === 'Cash' ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span></td></tr>`;
         }
 
@@ -14468,52 +14470,66 @@
                 totalNilai += parseNumber(r.Total);
             });
 
-            // Faktur yang sedang dicentang untuk dikirim ke Cetak Tagihan.
-            // Ambil langsung dari salesRowsSelected supaya Ringkasan tidak
-            // bergantung pada fungsi lama/piutang yang sudah dihapus.
-            const selectedSet = new Set();
-            (salesRowsSelected || new Set()).forEach(idx => {
-                const r = salesData[idx];
-                const no = r ? normFaktur(r['No.Faktur']) : '';
-                if (no) selectedSet.add(no);
+            // ----- Total Penjualan Cash & Tempo bulan berjalan -----
+            let totalCash = 0, totalTempo = 0;
+            rowsPeriode.forEach(r => {
+                const nilai = parseNumber(r.Total);
+                if (r.Pembayaran === 'Cash') totalCash += nilai; else totalTempo += nilai;
             });
-            const selectedCount = selectedSet.size;
-            let selectedTotal = 0;
-            salesData.forEach(r => {
-                const no = normFaktur(r['No.Faktur']);
-                if (no && selectedSet.has(no)) selectedTotal += parseNumber(r.Total);
+
+            // ----- Total Uang Masuk (Cash Inflow) bulan berjalan -----
+            // Sumber: data Tab UANG MASUK (cashDataMap), BUKAN salesData,
+            // karena uang masuk = pembayaran yang benar-benar diterima (termasuk
+            // pelunasan piutang tempo), bukan nilai transaksi penjualan.
+            // Rumusnya SAMA PERSIS dengan kartu "Total" di Tab Uang Masuk
+            // (t2UpdateMiniCards / t2sTotalBayar), cuma dibatasi ke bulan
+            // berjalan saja lewat t2PaymentAmount() (BG belum cair tetap
+            // tidak dihitung, sama seperti di Tab Uang Masuk).
+            let cashInflow = 0;
+            const cashDaysPeriodeIni = cashDataMap[periode] || [];
+            cashDaysPeriodeIni.forEach(day => {
+                (day.piutangDetail || []).forEach(d => {
+                    cashInflow += t2PaymentAmount({
+                        section: 'PIUTANG TEMPO', ket: d.ket || '',
+                        minyakCash: d.minyakCash || 0, minyakTf: d.minyakTransfer || 0,
+                        rupaCash: d.rupaCash || 0, rupaTf: d.rupaTransfer || 0
+                    });
+                });
+                (day.cashDroppingDetail || []).forEach(d => {
+                    cashInflow += t2PaymentAmount({
+                        section: 'CASH DROPPING', ket: d.ket || '',
+                        minyakCash: d.minyakCash || 0, minyakTf: d.minyakTransfer || 0,
+                        rupaCash: d.rupaCash || 0, rupaTf: d.rupaTransfer || 0
+                    });
+                });
             });
 
             const statsBar = document.getElementById('rkStatsBar');
             if (statsBar) {
+                const rkMoney = (n) => {
+                    n = Math.round(parseNumber(n) || 0);
+                    return `<span class="rk-stat-rp">Rp</span>${n.toLocaleString('id-ID')}`;
+                };
                 statsBar.innerHTML = `
                     <div class="rk-stat-card">
-                        <div>
-                            <div class="rk-stat-label">Total Faktur</div>
-                            <div class="rk-stat-value">${invoiceSet.size}</div>
-                        </div>
-                        <div class="rk-stat-sub">Faktur</div>
+                        <div class="rk-stat-label">Total Faktur</div>
+                        <div class="rk-stat-value">${invoiceSet.size}</div>
+                        <div class="rk-stat-sub">Faktur &middot; ${fmtBulanTahun(periode)}</div>
                     </div>
                     <div class="rk-stat-card">
-                        <div>
-                            <div class="rk-stat-label">Total Nilai</div>
-                            <div class="rk-stat-value" style="font-size:15px;">${fmtRp(totalNilai)}</div>
-                        </div>
+                        <div class="rk-stat-label">Penjualan Cash</div>
+                        <div class="rk-stat-value">${rkMoney(totalCash)}</div>
                         <div class="rk-stat-sub">${fmtBulanTahun(periode)}</div>
                     </div>
                     <div class="rk-stat-card">
-                        <div>
-                            <div class="rk-stat-label">Dipilih Cetak</div>
-                            <div class="rk-stat-value">${selectedCount}</div>
-                        </div>
-                        <div class="rk-stat-sub">Faktur</div>
+                        <div class="rk-stat-label">Penjualan Tempo</div>
+                        <div class="rk-stat-value">${rkMoney(totalTempo)}</div>
+                        <div class="rk-stat-sub">${fmtBulanTahun(periode)}</div>
                     </div>
                     <div class="rk-stat-card">
-                        <div>
-                            <div class="rk-stat-label">Nilai Dipilih</div>
-                            <div class="rk-stat-value" style="font-size:15px;">${fmtRp(selectedTotal)}</div>
-                        </div>
-                        <div class="rk-stat-sub">Untuk Cetak Tagihan</div>
+                        <div class="rk-stat-label">Cash Inflow</div>
+                        <div class="rk-stat-value">${rkMoney(cashInflow)}</div>
+                        <div class="rk-stat-sub">${fmtBulanTahun(periode)}</div>
                     </div>`;
             }
 
