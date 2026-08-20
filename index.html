@@ -6214,6 +6214,12 @@ html.gamas-dark-mode #tab1 > #tab1LegacyContent .tab1-view-btn.active{background
   #tab1 > #tab1LegacyContent .tab1-view-toggle{margin-left:0 !important;}
 }
 </style>
+
+<style id="persistent-cloud-fix-style">
+#persistentCloudStatus{position:fixed;right:14px;bottom:14px;z-index:999999;
+padding:8px 12px;border-radius:8px;background:#172033;color:#fff;
+font:600 12px/1.3 Arial,sans-serif;display:none;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+</style>
 </head>
 <body>
 <style id="gamas-splash-style">
@@ -8404,6 +8410,7 @@ html.gamas-dark-mode #tab1 > #tab1LegacyContent .tab1-view-btn.active{background
         function autoBackupSalesToLocalStorage() {
             try {
                 localStorage.setItem(LS_BACKUP_SALES_KEY, JSON.stringify(salesData));
+                localStorage.setItem('gmAutoBackupSalesLastAt', new Date().toISOString());
             } catch (e) {
                 console.warn('Auto-backup sales ke localStorage gagal (mungkin penuh):', e);
             }
@@ -9754,47 +9761,83 @@ function t2GetCorrection(faktur) {
         async function loadSalesData() {
             try {
                 const data = await db.sales.toArray();
-                // Reset pelacak sinkronisasi setiap kali muat ulang dari server,
-                // supaya salesDocIds & salesSyncedSnapshot selalu mencerminkan
-                // persis apa yang ada di server SAAT INI (bukan sisa sesi lama).
+                // Jika cloud kosong, gunakan backup lokal sebagai sumber pemulihan.
+                // Ini mencegah data hilang setelah refresh ketika database cloud
+                // sedang kosong/tidak terbaca.
+                let source = Array.isArray(data) ? data : [];
+                if (source.length === 0) {
+                    try {
+                        const raw = localStorage.getItem(LS_BACKUP_SALES_KEY);
+                        const backup = raw ? JSON.parse(raw) : [];
+                        if (Array.isArray(backup) && backup.length > 0) {
+                            source = backup;
+                            // Coba sinkronkan kembali backup ke cloud.
+                            try {
+                                await db.sales.syncRows(source, new WeakMap(), new Map());
+                            } catch (syncErr) {
+                                console.warn('Cloud kosong; backup lokal dipakai. Sinkronisasi ulang gagal:', syncErr);
+                            }
+                        }
+                    } catch (restoreErr) {
+                        console.warn('Backup lokal sales tidak bisa dibaca:', restoreErr);
+                    }
+                }
+
+                // Reset pelacak sinkronisasi setiap kali muat ulang dari server/backup.
                 salesDocIds = new WeakMap();
                 salesSyncedSnapshot = new Map();
-                if (data.length > 0) {
-                    salesData = data.map(({ id, ...rest }) => {
-                        salesDocIds.set(rest, id);
-                        salesSyncedSnapshot.set(id, JSON.stringify(rest));
+                if (source.length > 0) {
+                    salesData = source.map(({ id, ...rest }) => {
+                        // Backup lokal mungkin tidak mempunyai id cloud. Itu tidak masalah;
+                        // baris akan dianggap baru saat save berikutnya.
+                        if (id) {
+                            salesDocIds.set(rest, id);
+                            salesSyncedSnapshot.set(id, JSON.stringify(rest));
+                        }
                         return rest;
                     });
-                } else { salesData = []; }
-                // Urutkan TANGGAL TERTUA dulu. PENTING sejak pindah ke Firestore:
-                // Firestore TIDAK menjamin urutan dokumen mengikuti urutan input
-                // (beda dengan IndexedDB yang dulu kebetulan berurutan karena
-                // auto-increment id). Sort ini di sumber data supaya SEMUA tabel
-                // yang memakai salesData (Bank Data Penjualan, Cek Cash, Cek
-                // Piutang, dst) otomatis ikut terurut, tidak perlu diurutkan
-                // satu-satu di tiap tabel. (Catatan: sort cuma menukar URUTAN
-                // elemen array, objek baris & referensinya tetap sama, jadi
-                // salesDocIds (WeakMap per-objek) tetap valid setelah sort ini.)
+                    autoBackupSalesToLocalStorage();
+                } else {
+                    salesData = [];
+                }
                 salesData.sort((a, b) => String(a.Tanggal || '').localeCompare(String(b.Tanggal || '')) ||
                     String(a['No.Faktur'] || '').localeCompare(String(b['No.Faktur'] || '')));
-            } catch (e) { console.warn('Gagal muat sales:', e);
-                salesData = []; }
+            } catch (e) {
+                console.warn('Gagal muat sales:', e);
+                // Bahkan jika Supabase gagal total, jangan kosongkan data yang sudah
+                // tersimpan di backup lokal.
+                try {
+                    const raw = localStorage.getItem(LS_BACKUP_SALES_KEY);
+                    const backup = raw ? JSON.parse(raw) : [];
+                    if (Array.isArray(backup) && backup.length > 0) {
+                        salesData = backup.map(r => Object.assign({}, r));
+                        salesDocIds = new WeakMap();
+                        salesSyncedSnapshot = new Map();
+                        salesData.sort((a, b) => String(a.Tanggal || '').localeCompare(String(b.Tanggal || '')) ||
+                            String(a['No.Faktur'] || '').localeCompare(String(b['No.Faktur'] || '')));
+                        return;
+                    }
+                } catch (_) {}
+                salesData = [];
+            }
         }
 
         async function saveSalesData() {
+            // Backup lokal dilakukan SEBELUM mencoba cloud. Jadi bila Supabase
+            // gagal, data hasil import tetap aman untuk refresh/reload.
             try {
-                // INKREMENTAL: hanya baris baru/berubah/dihapus yang dikirim ke
-                // server (bukan hapus-semua-lalu-tulis-ulang-semua seperti dulu).
-                // Jauh lebih cepat & tidak akan lagi kena error "Transaction too
-                // big" karena jumlah operasi per save biasanya jauh di bawah 500,
-                // kecuali memang lagi impor banyak baris sekaligus (yang tetap
-                // aman karena syncRows() otomatis membaginya jadi beberapa batch).
+                autoBackupSalesToLocalStorage();
+            } catch (_) {}
+            try {
                 await db.sales.syncRows(salesData, salesDocIds, salesSyncedSnapshot);
                 filterCache.clear();
                 autoBackupSalesToLocalStorage();
                 return true;
             } catch (e) {
-                showToast('❌ Gagal simpan sales: ' + e.message, 'warning');
+                // Data tetap dianggap tersimpan lokal; cloud bisa dicoba lagi nanti.
+                // Jangan menghapus salesData dari memori.
+                autoBackupSalesToLocalStorage();
+                showToast('⚠️ Data tersimpan di perangkat, tetapi sinkronisasi cloud gagal: ' + e.message, 'warning');
                 return false;
             }
         }
@@ -16031,6 +16074,11 @@ document.addEventListener('scroll', () => _produkAcHide(), true);
             try {
                 try { await cobaPulihkanDariLocalStorageBackup(); } catch (e) { console.warn('Lewati pemulihan cadangan lokal:', e); }
                 await loadSalesData();
+                // Setelah refresh, jika data berasal dari backup lokal, coba kirim lagi
+                // ke cloud agar penyimpanan permanen kembali normal.
+                if (Array.isArray(salesData) && salesData.length > 0) {
+                    try { await saveSalesData(); } catch (_) {}
+                }
                 await loadTrashData();
 
                 // Filter periode bulan dibuka otomatis di bulan TERBARU yang ada datanya
