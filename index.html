@@ -23,7 +23,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         /* ===== CSS LENGKAP ===== */
@@ -2046,6 +2045,9 @@
         td.num,
         th.num {
             text-align: right;
+        }
+        .total-faktur-cell {
+            color: #0f5132;
         }
         /* Responsive & Hidden Columns untuk Small Screens */
         @media (max-width: 1200px) {
@@ -5922,54 +5924,7 @@
                     </div>
 
                     <div class="no-print text-muted" style="font-size:9px;color:#94a3b8;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:10px;">
-                        ℹ️ Data utama sudah tersimpan otomatis di server (Supabase) dan sinkron di semua device. File backup <strong>.json</strong> di kartu ini cuma salinan cadangan tambahan (arsip pribadi) — tetap disarankan disimpan rutin di tempat aman.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 1G: Backup ke Google Drive -->
-            <div class="tab8-card">
-                <div class="tab8-card-head">
-                    <div class="title">☁️ BACKUP KE GOOGLE DRIVE <small>Salinan cadangan otomatis tersimpan di Google Drive Anda</small></div>
-                    <span style="font-size:10px; color:#b0c4de;" id="gdriveStatus">📭 Belum pernah backup ke Drive.</span>
-                </div>
-                <div class="tab8-card-body">
-                    <div class="no-print" style="font-size:10px;color:#6b7280;margin-bottom:12px;">
-                        Menyimpan file backup yang sama (semua data aplikasi) ke 1 file tetap di Google Drive akun Anda —
-                        setiap kali backup dijalankan, file yang sama ditimpa (bukan bikin file baru terus).
-                        Defaultnya file masuk ke folder utama ("My Drive"), tapi Anda bisa tentukan folder tujuan sendiri di bawah ini.
-                    </div>
-
-                    <div class="no-print" style="margin-bottom:12px;">
-                        <label style="font-size:10px;font-weight:700;color:#4a5568;text-transform:uppercase;display:block;margin-bottom:3px;">Folder tujuan di Drive (opsional)</label>
-                        <input type="text" id="gdriveFolderInput" placeholder="Tempel link folder Google Drive di sini, atau kosongkan untuk My Drive" style="width:100%;max-width:520px;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;">
-                        <div style="font-size:9px;color:#94a3b8;margin-top:3px;">Cara ambil link: buka folder tujuan di Google Drive → klik kanan → "Get link"/"Dapatkan link" → tempel di sini. Kalau diganti, backup berikutnya otomatis dipindah ke folder baru.</div>
-                    </div>
-
-                    <div class="save-actions">
-                        <button class="btn btn-success" id="btnGdriveBackupNow" style="font-size:13px;padding:10px 24px;">
-                            <i class="bi bi-cloud-upload"></i> ☁️ Sambungkan &amp; Backup ke Drive Sekarang
-                        </button>
-                    </div>
-
-                    <div class="no-print" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; flex-wrap:wrap;">
-                        <div style="font-size:11px; color:#334155; max-width:520px;">
-                            <strong>☁️ Auto-Backup Harian ke Drive:</strong>
-                            <span id="gdriveAutoModeDesc">Nonaktif — cuma backup manual lewat tombol di atas.</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span id="gdriveAutoLabelOff" style="font-size:11px; font-weight:700; color:#1f4e78;">Nonaktif</span>
-                            <label style="position:relative; display:inline-block; width:40px; height:22px;">
-                                <input type="checkbox" id="chkGdriveAuto" style="opacity:0; width:0; height:0;">
-                                <span id="gdriveAutoSlider" style="position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:22px; transition:.2s;"></span>
-                                <span id="gdriveAutoKnob" style="position:absolute; height:16px; width:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 2px rgba(0,0,0,0.3);"></span>
-                            </label>
-                            <span id="gdriveAutoLabelOn" style="font-size:11px; font-weight:700; color:#94a3b8;">Aktif (1x/hari)</span>
-                        </div>
-                    </div>
-
-                    <div class="no-print text-muted" style="font-size:9px;color:#94a3b8;margin-top:14px;border-top:1px solid #e2e8f0;padding-top:10px;">
-                        ⚠️ Auto-backup harian butuh sesi Google yang masih aktif di browser ini. Kalau lewat sehari belum ke-backup otomatis, klik tombol biru di atas 1x saja (akan minta izin akses Drive sekali, lalu ingat sendiri untuk hari-hari berikutnya selama sesi browser aktif).
+                        ⚠️ Data tersimpan di perangkat ini saja. Lakukan <strong>Save All Data</strong> secara rutin dan simpan file backup-nya di tempat aman.
                     </div>
                 </div>
             </div>
@@ -9905,7 +9860,7 @@
             const invKeyForTotal = normFaktur(r['No.Faktur']);
             const invoiceTotalForRow = invKeyForTotal ? (salesInvoiceTotalMap.get(invKeyForTotal) || 0) : 0;
             const totalFakturCell = !invKeyForTotal ? `<td class="num">-</td>` :
-                isFirstInvoiceRow ? `<td class="num" style="font-weight:700;color:#0f5132;">${fmtRp(invoiceTotalForRow)}</td>` :
+                isFirstInvoiceRow ? `<td class="num total-faktur-cell" style="font-weight:700;">${fmtRp(invoiceTotalForRow)}</td>` :
                 `<td class="num"></td>`;
             return `<tr${rowClass}><td>${invoiceCheckbox}</td><td>${fmtTanggal(r.Tanggal)}</td><td>${noFakturSafe ? `<a href="#" class="tab1-faktur-link" data-faktur="${noFakturSafe}" style="${fakturLinkStyle}"${fakturLinkTitle}>${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : ''}</td><td>${r.Produk || ''}</td><td class="num">${jumlah}</td><td>${r.Satuan || ''}</td><td class="num">${fmtRp(harga)}${hargaJualCellExtra}</td><td class="num">${hargaBeli !== null ? fmtRp(hargaBeli) : '-'}</td><td class="num">${fmtRp(disc)}</td><td class="num">${fmtRp(total)}</td>${totalFakturCell}<td>${r.Sales || ''}</td><td>${r.Customer || ''}</td><td>${r.Alamat || ''}</td><td><span class="badge ${r.Pembayaran === 'Cash' ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span></td></tr>`;
         }
@@ -13227,34 +13182,6 @@
             await jalankanBackupSemuaData({ pakaiFileTetap: false });
         }
 
-        // Membangun isi backup (semua tabel + input harian) jadi satu Blob JSON.
-        // Dipakai bersama oleh: download manual, file-tetap lokal, DAN backup
-        // ke Google Drive -- supaya isinya selalu identik di ketiga mode.
-        async function buatBlobBackupSemuaData() {
-            const [sales, cashIncome, printHistory, trash, pengeluaran] = await Promise.all([
-                db.sales.toArray(),
-                db.cashIncome.toArray(),
-                db.printHistory.toArray(),
-                db.trash.toArray(),
-                (db.pengeluaran ? db.pengeluaran.toArray() : Promise.resolve([]))
-            ]);
-
-            const inputHarian = {};
-            getAllInputHarianKeys().forEach(function(key) {
-                try {
-                    inputHarian[key] = JSON.parse(localStorage.getItem(key));
-                } catch (e) {}
-            });
-
-            const backup = {
-                app: 'GAMAS 2026 - All in One',
-                backupVersion: 3,
-                exportedAt: new Date().toISOString(),
-                data: { sales, cashIncome, printHistory, inputHarian, trash, pengeluaran }
-            };
-            return new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-        }
-
         // opts.pakaiFileTetap = true  -> timpa 1 file yang sama (auto-save mode).
         // opts.pakaiFileTetap = false -> selalu download file baru (manual, seperti biasa).
         // Dipakai baik oleh tombol manual (setelah user klik "Ya" di confirm)
@@ -13263,7 +13190,29 @@
         async function jalankanBackupSemuaData(opts) {
             opts = opts || {};
             try {
-                const blob = await buatBlobBackupSemuaData();
+                const [sales, cashIncome, printHistory, trash, pengeluaran] = await Promise.all([
+                    db.sales.toArray(),
+                    db.cashIncome.toArray(),
+                    db.printHistory.toArray(),
+                    db.trash.toArray(),
+                    (db.pengeluaran ? db.pengeluaran.toArray() : Promise.resolve([]))
+                ]);
+
+                const inputHarian = {};
+                getAllInputHarianKeys().forEach(function(key) {
+                    try {
+                        inputHarian[key] = JSON.parse(localStorage.getItem(key));
+                    } catch (e) {}
+                });
+
+                const backup = {
+                    app: 'GAMAS 2026 - All in One',
+                    backupVersion: 3,
+                    exportedAt: new Date().toISOString(),
+                    data: { sales, cashIncome, printHistory, inputHarian, trash, pengeluaran }
+                };
+
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
 
                 if (opts.pakaiFileTetap && dukungFileTetap) {
                     // Mode "1 file tetap": tulis/timpa langsung ke handle yang
@@ -13317,234 +13266,6 @@
                 showToast('❌ Gagal menyimpan data: ' + e.message, 'warning');
             }
         }
-
-        // ================================================================
-        // BACKUP KE GOOGLE DRIVE (manual + otomatis 1x/hari)
-        // ----------------------------------------------------------------
-        // PENTING: GDRIVE_CLIENT_ID di bawah harus diisi dulu dengan OAuth
-        // Client ID dari Google Cloud Console (punya masing-masing user
-        // aplikasi ini) supaya tombol "Backup ke Drive" berfungsi. Selama
-        // masih kosong/placeholder, tombolnya akan menampilkan pesan minta
-        // disetel dulu -- fitur lain di aplikasi TIDAK terpengaruh.
-        // Scope yang dipakai (drive.file) HANYA memberi akses ke file yang
-        // dibuat oleh aplikasi ini sendiri -- tidak bisa melihat file lain
-        // di Google Drive milik user.
-        // ================================================================
-        const GDRIVE_CLIENT_ID = 'PASTE_GOOGLE_OAUTH_CLIENT_ID_ANDA_DI_SINI.apps.googleusercontent.com';
-        const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
-        const GDRIVE_BACKUP_FILENAME = 'GAJAH_MAS_2026_BACKUP_AUTOSAVE.json';
-
-        let gdriveTokenClient = null;
-        let gdriveAccessToken = null;
-        let gdriveTokenExpiresAt = 0;
-        let gdriveFileId = localStorage.getItem('gdriveBackupFileId') || null;
-
-        function gdriveTerpasang() {
-            return !!(window.google && google.accounts && google.accounts.oauth2) &&
-                GDRIVE_CLIENT_ID && !GDRIVE_CLIENT_ID.startsWith('PASTE_');
-        }
-
-        function gdriveAmbilToken(interaktif) {
-            return new Promise((resolve, reject) => {
-                if (!gdriveTerpasang()) { reject(new Error('Google Drive belum disetel (Client ID kosong). Lihat instruksi setup.')); return; }
-                if (gdriveAccessToken && Date.now() < gdriveTokenExpiresAt - 30000) { resolve(gdriveAccessToken); return; }
-                if (!gdriveTokenClient) {
-                    gdriveTokenClient = google.accounts.oauth2.initTokenClient({
-                        client_id: GDRIVE_CLIENT_ID,
-                        scope: GDRIVE_SCOPE,
-                        callback: () => {}
-                    });
-                }
-                gdriveTokenClient.callback = (resp) => {
-                    if (resp && resp.access_token) {
-                        gdriveAccessToken = resp.access_token;
-                        gdriveTokenExpiresAt = Date.now() + (resp.expires_in || 3600) * 1000;
-                        resolve(gdriveAccessToken);
-                    } else {
-                        reject(new Error('Gagal mendapat izin akses Google Drive.'));
-                    }
-                };
-                gdriveTokenClient.error_callback = (err) => reject(new Error((err && err.type) || 'Izin Google Drive dibatalkan.'));
-                gdriveTokenClient.requestAccessToken({ prompt: interaktif ? 'consent' : '' });
-            });
-        }
-
-        async function gdriveCariFileBackup(token) {
-            if (gdriveFileId) return gdriveFileId;
-            const q = encodeURIComponent(`name='${GDRIVE_BACKUP_FILENAME}' and trashed=false`);
-            const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name)`, {
-                headers: { Authorization: 'Bearer ' + token }
-            });
-            if (!res.ok) throw new Error('Gagal mencari file di Drive (' + res.status + ')');
-            const json = await res.json();
-            if (json.files && json.files.length) {
-                gdriveFileId = json.files[0].id;
-                localStorage.setItem('gdriveBackupFileId', gdriveFileId);
-            }
-            return gdriveFileId;
-        }
-
-        function gdriveParseFolderId(v) {
-            v = (v || '').trim();
-            if (!v) return '';
-            const m = v.match(/\/folders\/([a-zA-Z0-9_-]+)/); // link Drive: .../folders/<ID>
-            if (m) return m[1];
-            const m2 = v.match(/[?&]id=([a-zA-Z0-9_-]+)/); // link bentuk lain: ...?id=<ID>
-            if (m2) return m2[1];
-            return v; // dianggap sudah berupa ID Drive murni
-        }
-
-        // Pastikan file backup ada di folder yang SEDANG dipilih user. Kalau
-        // sudah pernah dibuat di folder lain sebelumnya, pindahkan (addParents/
-        // removeParents) -- tidak membuat file duplikat baru.
-        async function gdrivePastikanFolder(fileId, token) {
-            const folderId = gdriveParseFolderId(document.getElementById('gdriveFolderInput')?.value || localStorage.getItem('gdriveFolderId') || '');
-            const lastUsed = localStorage.getItem('gdriveBackupFileParent') || '';
-            if (folderId === lastUsed) return;
-            const infoRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=parents`, {
-                headers: { Authorization: 'Bearer ' + token }
-            });
-            if (!infoRes.ok) throw new Error('Gagal membaca lokasi file saat ini di Drive (' + infoRes.status + ')');
-            const info = await infoRes.json();
-            const currentParents = (info.parents || []).join(',');
-            let url = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,parents`;
-            if (folderId) url += `&addParents=${encodeURIComponent(folderId)}`;
-            if (currentParents) url += `&removeParents=${encodeURIComponent(currentParents)}`;
-            const res = await fetch(url, { method: 'PATCH', headers: { Authorization: 'Bearer ' + token } });
-            if (!res.ok) throw new Error('Gagal memindahkan file ke folder tujuan (' + res.status + '). Pastikan link foldernya benar & Anda punya akses edit ke folder itu.');
-            localStorage.setItem('gdriveBackupFileParent', folderId);
-        }
-
-        async function gdriveUnggahBackup(blob, token) {
-            const existingId = await gdriveCariFileBackup(token);
-            if (existingId) {
-                await gdrivePastikanFolder(existingId, token);
-                // File sudah ada -> TIMPA isinya (bukan bikin file baru).
-                const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=media`, {
-                    method: 'PATCH',
-                    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: blob
-                });
-                if (!res.ok) throw new Error('Gagal update file di Drive (' + res.status + ')');
-                return existingId;
-            } else {
-                // Belum pernah backup -> buat file baru sekali ini saja.
-                const folderId = gdriveParseFolderId(document.getElementById('gdriveFolderInput')?.value || localStorage.getItem('gdriveFolderId') || '');
-                const metadata = { name: GDRIVE_BACKUP_FILENAME, mimeType: 'application/json' };
-                if (folderId) metadata.parents = [folderId];
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', blob);
-                const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-                    method: 'POST',
-                    headers: { Authorization: 'Bearer ' + token },
-                    body: form
-                });
-                if (!res.ok) throw new Error('Gagal membuat file di Drive (' + res.status + ')');
-                const json = await res.json();
-                gdriveFileId = json.id;
-                localStorage.setItem('gdriveBackupFileId', gdriveFileId);
-                localStorage.setItem('gdriveBackupFileParent', folderId);
-                return gdriveFileId;
-            }
-        }
-
-        function gdriveUpdateStatusUI() {
-            const el = document.getElementById('gdriveStatus');
-            const last = localStorage.getItem('gdriveLastBackupAt');
-            if (el) el.textContent = last ? ('✅ Backup Drive terakhir: ' + last) : '📭 Belum pernah backup ke Drive.';
-        }
-
-        // interaktif=true -> boleh munculkan popup izin Google (dipicu klik tombol).
-        // interaktif=false -> hanya jalan diam-diam kalau sesi/izin masih ada
-        // (dipakai oleh auto-backup harian, TIDAK BOLEH memunculkan popup sendiri).
-        async function backupKeGoogleDrive(interaktif) {
-            if (!gdriveTerpasang()) {
-                if (interaktif) showToast('⚠️ Google Drive belum disetel. Lihat instruksi setup GDRIVE_CLIENT_ID di kode.', 'warning');
-                return false;
-            }
-            try {
-                const token = await gdriveAmbilToken(!!interaktif);
-                const blob = await buatBlobBackupSemuaData();
-                await gdriveUnggahBackup(blob, token);
-                const now = new Date().toLocaleString('id-ID');
-                localStorage.setItem('gdriveLastBackupAt', now);
-                localStorage.setItem('gdriveLastBackupAtISO', new Date().toISOString());
-                gdriveUpdateStatusUI();
-                if (interaktif) showToast('☁️ Backup ke Google Drive berhasil!', 'success');
-                return true;
-            } catch (e) {
-                console.warn('Gagal backup ke Google Drive:', e);
-                if (interaktif) showToast('❌ Gagal backup ke Google Drive: ' + e.message, 'warning');
-                return false;
-            }
-        }
-
-        // Dicoba diam-diam maksimal 1x per hari (tanpa popup). Kalau gagal
-        // (misal belum pernah kasih izin sama sekali di sesi ini), dilewati
-        // saja tanpa notifikasi -- user cukup klik tombol manual 1x untuk
-        // "menghidupkan" lagi izinnya.
-        async function cobaAutoBackupDriveHarian() {
-            try {
-                if (localStorage.getItem('gdriveAutoBackupAktif') !== '1') return;
-                if (!gdriveTerpasang()) return;
-                const lastISO = localStorage.getItem('gdriveLastBackupAtISO');
-                const today = new Date().toISOString().slice(0, 10);
-                if (lastISO && lastISO.slice(0, 10) === today) return; // sudah backup hari ini
-                await backupKeGoogleDrive(false);
-            } catch (e) { /* diam-diam, tidak ganggu user */ }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            gdriveUpdateStatusUI();
-            const btn = document.getElementById('btnGdriveBackupNow');
-            if (btn) btn.addEventListener('click', function() { backupKeGoogleDrive(true); });
-
-            const folderInput = document.getElementById('gdriveFolderInput');
-            if (folderInput) {
-                folderInput.value = localStorage.getItem('gdriveFolderInputRaw') || '';
-                folderInput.addEventListener('change', function() {
-                    localStorage.setItem('gdriveFolderInputRaw', this.value.trim());
-                    localStorage.setItem('gdriveFolderId', gdriveParseFolderId(this.value));
-                });
-            }
-
-            const chkGdriveAuto = document.getElementById('chkGdriveAuto');
-            const gdriveAutoSlider = document.getElementById('gdriveAutoSlider');
-            const gdriveAutoKnob = document.getElementById('gdriveAutoKnob');
-            const gdriveAutoModeDesc = document.getElementById('gdriveAutoModeDesc');
-            const gdriveAutoLabelOff = document.getElementById('gdriveAutoLabelOff');
-            const gdriveAutoLabelOn = document.getElementById('gdriveAutoLabelOn');
-            function terapkanGdriveAutoUI(aktif) {
-                if (gdriveAutoSlider) gdriveAutoSlider.style.background = aktif ? '#16a34a' : '#cbd5e1';
-                if (gdriveAutoKnob) gdriveAutoKnob.style.left = aktif ? '21px' : '3px';
-                if (gdriveAutoModeDesc) gdriveAutoModeDesc.textContent = aktif
-                    ? 'Aktif — dicoba backup otomatis 1x/hari (diam-diam, tanpa popup).'
-                    : 'Nonaktif — cuma backup manual lewat tombol di atas.';
-                if (gdriveAutoLabelOff) gdriveAutoLabelOff.style.color = aktif ? '#94a3b8' : '#1f4e78';
-                if (gdriveAutoLabelOn) gdriveAutoLabelOn.style.color = aktif ? '#16a34a' : '#94a3b8';
-            }
-            if (chkGdriveAuto) {
-                const aktifAwal = localStorage.getItem('gdriveAutoBackupAktif') === '1';
-                chkGdriveAuto.checked = aktifAwal;
-                terapkanGdriveAutoUI(aktifAwal);
-                chkGdriveAuto.addEventListener('change', function() {
-                    localStorage.setItem('gdriveAutoBackupAktif', this.checked ? '1' : '0');
-                    terapkanGdriveAutoUI(this.checked);
-                    if (this.checked) {
-                        if (!gdriveTerpasang()) {
-                            showToast('⚠️ Google Drive belum disetel. Klik tombol Backup Sekarang setelah setup selesai.', 'warning');
-                        } else {
-                            showToast('☁️ Auto-backup Drive diaktifkan. Klik "Backup ke Drive Sekarang" 1x untuk kasih izin awal.', 'success');
-                        }
-                    }
-                });
-            }
-            // Coba auto-backup harian setiap kali app dibuka, lalu cek ulang tiap 3 jam
-            // (kalau app dibiarkan terbuka lama, tanpa perlu refresh).
-            setTimeout(cobaAutoBackupDriveHarian, 4000);
-            setInterval(cobaAutoBackupDriveHarian, 3 * 60 * 60 * 1000);
-        });
 
         async function muatSemuaDataDariFile(file) {
             if (!file) return;
@@ -15283,7 +15004,19 @@ html.gamas-dark-mode .tab-btn[data-tab="tab7"].active,
 html.gamas-dark-mode .tab-btn[data-tab="tab8"].active,
 html.gamas-dark-mode .tab-btn[data-tab="tab9"].active,
 html.gamas-dark-mode .tab-btn[data-tab="tab10"].active {
-    background: #8b9bf5 !important;
+    background: #4338ca !important;
+    color: #ffffff !important;
+    border-color: #6366f1 !important;
+}
+html.gamas-dark-mode .tab-btn[data-tab="tab0"].active .tab-icon,
+html.gamas-dark-mode .tab-btn[data-tab="tab1"].active .tab-icon,
+html.gamas-dark-mode .tab-btn[data-tab="tab2"].active .tab-icon,
+html.gamas-dark-mode .tab-btn[data-tab="tab6"].active .tab-icon,
+html.gamas-dark-mode .tab-btn[data-tab="tab7"].active .tab-icon,
+html.gamas-dark-mode .tab-btn[data-tab="tab8"].active .tab-icon,
+html.gamas-dark-mode .tab-btn[data-tab="tab9"].active .tab-icon,
+html.gamas-dark-mode .tab-btn[data-tab="tab10"].active .tab-icon {
+    color: #ffffff !important;
 }
 
 html.gamas-dark-mode .tab-btn .badge-tab {
@@ -15818,6 +15551,13 @@ html.gamas-dark-mode .stempel-lunas-modal::before {
 html.gamas-dark-mode .tab1-faktur-link[title] {
     color: #ffb84d !important;
     text-decoration-color: #ffb84d !important;
+}
+html.gamas-dark-mode .tab1-faktur-link:not([title]) {
+    color: #7dd3fc !important;
+    text-decoration-color: #7dd3fc !important;
+}
+html.gamas-dark-mode .total-faktur-cell {
+    color: #34d399 !important;
 }
 html.gamas-dark-mode .btn-faktur {
     background: #f0940f !important;
