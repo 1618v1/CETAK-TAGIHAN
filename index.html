@@ -8700,6 +8700,20 @@
             return map;
         }
 
+        // Nama bulan Indonesia (& singkatan umum) untuk parsing tanggal berformat
+        // teks seperti "18 Agustus 2026" atau "18-Agu-2026" -- format yang sering
+        // muncul saat Excel/Sheet ditulis manual, dan SEBELUMNYA tidak dikenali
+        // sama sekali oleh fungsi ini (lihat catatan perbaikan Agustus 2026:
+        // baris dengan tanggal begini lolos ke database TANPA error apapun,
+        // tapi jadi tersembunyi dari semua tampilan yang difilter per-bulan,
+        // karena nilai Tanggal-nya bukan format ISO YYYY-MM-DD).
+        const BULAN_ID_MAP = {
+            jan: 1, januari: 1, feb: 2, februari: 2, mar: 3, maret: 3, apr: 4, april: 4,
+            mei: 5, may: 5, jun: 6, juni: 6, june: 6, jul: 7, juli: 7, july: 7,
+            agu: 8, ags: 8, agt: 8, agustus: 8, aug: 8, august: 8, sep: 9, sept: 9,
+            september: 9, okt: 10, oktober: 10, oct: 10, october: 10, nov: 11,
+            november: 11, des: 12, desember: 12, dec: 12, december: 12
+        };
         function salesExcelDate(v) {
             if (v instanceof Date && !isNaN(v.getTime())) {
                 return v.getFullYear() + '-' + String(v.getMonth() + 1).padStart(2, '0') + '-' + String(v.getDate()).padStart(2, '0');
@@ -8710,18 +8724,36 @@
             }
             const s = String(v == null ? '' : v).trim();
             if (!s) return '';
-            let m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
-            if (m) return m[3] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
-            m = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+            const yr4 = (y) => y.length === 2 ? (Number(y) <= 69 ? '20' + y : '19' + y) : y;
+            // DD/MM/YYYY atau DD/MM/YY
+            let m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+            if (m) return yr4(m[3]) + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
+            // YYYY/MM/DD
+            m = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
             if (m) return m[1] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[3]).padStart(2, '0');
+            // DD Bulan YYYY / DD-Bulan-YYYY (nama bulan Indonesia atau Inggris, boleh disingkat)
+            m = s.match(/^(\d{1,2})[\s\/-]+([A-Za-zé]+)\.?[\s\/-]+(\d{2,4})$/);
+            if (m) {
+                const bulanNum = BULAN_ID_MAP[m[2].toLowerCase()];
+                if (bulanNum) return yr4(m[3]) + '-' + String(bulanNum).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
+            }
             return s;
+        }
+        // Validasi ketat: hasil salesExcelDate() HARUS format ISO YYYY-MM-DD.
+        // Kalau tidak (artinya semua pola di atas gagal mengenali tanggalnya),
+        // baris itu JANGAN diam-diam masuk ke database dengan Tanggal rusak --
+        // lebih baik ditolak & dilaporkan ke user supaya file sumbernya dibetulkan.
+        function isValidIsoTanggal(s) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+            const d = new Date(s + 'T00:00:00');
+            return !isNaN(d.getTime());
         }
 
         function salesExcelCell(row, map, key) {
             return map[key] === undefined ? '' : row[map[key]];
         }
 
-        function salesExcelParseRows(rows, sheetName) {
+        function salesExcelParseRows(rows, sheetName, invalidDatesOut) {
             if (!rows || !rows.length) return [];
             const headerIdx = salesExcelFindHeaderIndex(rows);
             const header = rows[headerIdx] || [];
@@ -8734,8 +8766,19 @@
                 const faktur = String(salesExcelCell(r, map, 'No.Faktur') || '').trim();
                 const produk = String(salesExcelCell(r, map, 'Produk') || '').trim();
                 if (!faktur || !produk) continue;
-                const tanggal = salesExcelDate(salesExcelCell(r, map, 'Tanggal'));
+                const tanggalMentah = salesExcelCell(r, map, 'Tanggal');
+                const tanggal = salesExcelDate(tanggalMentah);
                 if (!tanggal) continue;
+                if (!isValidIsoTanggal(tanggal)) {
+                    // Format tanggal tidak dikenali (mis. ditulis manual dalam bentuk
+                    // yang tidak umum). Jangan masukkan dengan Tanggal rusak -- itu
+                    // membuat baris "hilang" dari semua tampilan yang difilter per
+                    // bulan tanpa pesan error apapun. Catat supaya dilaporkan ke user.
+                    if (invalidDatesOut) invalidDatesOut.push({
+                        sheet: sheetName || '', faktur, produk, nilai: String(tanggalMentah == null ? '' : tanggalMentah)
+                    });
+                    continue;
+                }
                 const jumlah = parseNumber(salesExcelCell(r, map, 'Jumlah'));
                 const hargaJual = parseNumber(salesExcelCell(r, map, 'Harga Jual'));
                 const hargaBeli = parseNumber(salesExcelCell(r, map, 'Harga Beli'));
@@ -8770,6 +8813,7 @@
 
             let imported = [];
             let failedFiles = [];
+            let invalidDates = [];
             for (const file of files) {
                 try {
                     const buf = await file.arrayBuffer();
@@ -8779,17 +8823,31 @@
                         if (/^sheet2$/i.test(sheetName) || /template/i.test(sheetName)) continue;
                         const sheet = wb.Sheets[sheetName];
                         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
-                        fileRows = fileRows.concat(salesExcelParseRows(rows, sheetName));
+                        fileRows = fileRows.concat(salesExcelParseRows(rows, sheetName, invalidDates));
                     }
-                    if (!fileRows.length) failedFiles.push(file.name);
+                    if (!fileRows.length && !invalidDates.length) failedFiles.push(file.name);
                     imported.push(...fileRows);
                 } catch (err) {
                     failedFiles.push(file.name + ' (' + err.message + ')');
                 }
             }
 
+            // Baris dengan format Tanggal yang tidak dikenali TIDAK ikut diimpor
+            // (lihat salesExcelParseRows/isValidIsoTanggal) -- selalu beri tahu
+            // user secara eksplisit, jangan pernah diam-diam, supaya user tahu
+            // harus membetulkan kolom Tanggal di file sumber lalu import ulang.
+            if (invalidDates.length) {
+                const contoh = invalidDates.slice(0, 5)
+                    .map(d => `${d.faktur || '-'} (${d.produk || '-'}): "${d.nilai}"`).join('; ');
+                showToast('⚠️ ' + invalidDates.length + ' baris DILEWATI karena format Tanggal tidak dikenali. Contoh: ' +
+                    contoh + (invalidDates.length > 5 ? ', dst.' : '') +
+                    '. Perbaiki kolom Tanggal (format DD/MM/YYYY) di file lalu import ulang baris tsb.', 'warning');
+            }
+
             if (!imported.length) {
-                showToast('⚠️ Tidak ada data penjualan yang terbaca. Pastikan kolom No.Faktur, Tanggal, dan Produk tersedia.', 'warning');
+                if (!invalidDates.length) {
+                    showToast('⚠️ Tidak ada data penjualan yang terbaca. Pastikan kolom No.Faktur, Tanggal, dan Produk tersedia.', 'warning');
+                }
                 return;
             }
 
