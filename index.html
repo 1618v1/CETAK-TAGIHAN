@@ -7179,6 +7179,48 @@ font:600 12px/1.3 Arial,sans-serif;display:none;box-shadow:0 4px 18px rgba(0,0,0
                     </div>
 </div>
 </div>
+<!-- Card 1C: Auto Save ke Google Drive -->
+<div class="tab8-card">
+<div class="tab8-card-head">
+<div class="title">☁️ SAVE ALL KE GOOGLE DRIVE <small>Backup ke folder Drive pilihan Anda — manual atau terjadwal</small></div>
+<span id="driveConnStatus" style="font-size:10px; color:#b0c4de;">🔌 Belum terhubung.</span>
+</div>
+<div class="tab8-card-body">
+<div class="no-print" style="font-size:10px;color:#6b7280;margin-bottom:12px;">
+                        Butuh <strong>Client ID</strong> Google milik Anda sendiri (gratis, dari Google Cloud Console) karena aplikasi ini berjalan langsung di browser tanpa server. Auto-save Drive hanya berjalan kalau tab/app ini masih terbuka di jam yang ditentukan.
+                        <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:#667eea;">Buka Google Cloud Console →</a>
+                    </div>
+<div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;">
+<input id="driveClientIdInput" placeholder="Tempel Client ID Google di sini (....apps.googleusercontent.com)" style="flex:1 1 320px; min-width:220px; height:32px; padding:0 10px; border:1.5px solid #d1d5db; border-radius:7px; font-size:12px; font-family:inherit;" type="text"/>
+<button class="btn btn-outline" id="btnDriveSaveClientId" style="font-size:12px;padding:8px 14px;">💾 Simpan Client ID</button>
+</div>
+<div class="save-actions" style="flex-wrap:wrap;">
+<button class="btn btn-outline" id="btnDriveConnect" style="font-size:13px;padding:10px 18px;">🔑 Hubungkan Akun Google</button>
+<button class="btn btn-outline" id="btnDrivePickFolder" style="font-size:13px;padding:10px 18px;" disabled="">📁 Pilih Folder Tujuan</button>
+<button class="btn btn-success" id="btnDriveSaveNow" style="font-size:13px;padding:10px 18px;" disabled="">☁️ Save All ke Drive Sekarang</button>
+</div>
+<div id="driveFolderStatus" style="font-size:11px;color:#334155;margin-top:8px;">📁 Folder tujuan: <em>belum dipilih</em></div>
+<div class="no-print" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; flex-wrap:wrap;">
+<div style="font-size:11px; color:#334155;">
+<strong>☁️ Auto-Save ke Drive:</strong>
+<span id="driveAutoSaveDesc">Mati.</span>
+</div>
+<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+<span style="font-size:11px;">jam</span>
+<input id="driveAutoSaveTime" style="font-size:11px; padding:4px 6px; border:1px solid #cbd5e1; border-radius:6px;" type="time" value="16:00"/>
+<span style="font-size:11px;">WIB</span>
+<label style="position:relative; display:inline-block; width:40px; height:22px;">
+<input id="chkDriveAutoSave" style="opacity:0; width:0; height:0;" type="checkbox"/>
+<span id="driveAutoSaveSlider" style="position:absolute; cursor:pointer; inset:0; background:#cbd5e1; border-radius:22px; transition:.2s;"></span>
+<span id="driveAutoSaveKnob" style="position:absolute; height:16px; width:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 2px rgba(0,0,0,0.3);"></span>
+</label>
+</div>
+</div>
+<div class="no-print text-muted" style="font-size:9px;color:#94a3b8;margin-top:10px;border-top:1px solid #e2e8f0;padding-top:8px;">
+                        ⚠️ Auto-save Drive butuh tab ini tetap terbuka di browser pada jam yang ditentukan. Kalau browser/tab tertutup, backup ke Drive tidak akan jalan sendiri — tapi begitu app dibuka lagi setelah lewat jam tsb (dan belum backup hari itu), akan langsung dicoba backup saat itu juga.
+                    </div>
+</div>
+</div>
 <!-- Card 1B: Riwayat Cetak (log setiap klik tombol cetak) -->
 <div class="tab8-card">
 <div class="tab8-card-head">
@@ -14635,32 +14677,41 @@ function t2GetCorrection(faktur) {
         // Dipakai baik oleh tombol manual (setelah user klik "Ya" di confirm)
         // maupun oleh penjadwal auto-save (tanpa dialog konfirmasi apa pun,
         // supaya benar-benar berjalan sendiri di latar belakang).
+        // Bangun blob backup (semua data app jadi satu file .json). Dipisah jadi fungsi
+        // sendiri supaya bisa dipakai ulang oleh: Save All ke Device (download) DAN
+        // Save All ke Google Drive (upload), tanpa duplikasi logika.
+        async function buatBackupBlob() {
+            const [sales, cashIncome, printHistory, trash, pengeluaran] = await Promise.all([
+                db.sales.toArray(),
+                db.cashIncome.toArray(),
+                db.printHistory.toArray(),
+                db.trash.toArray(),
+                (db.pengeluaran ? db.pengeluaran.toArray() : Promise.resolve([]))
+            ]);
+
+            const inputHarian = {};
+            getAllInputHarianKeys().forEach(function(key) {
+                try {
+                    inputHarian[key] = JSON.parse(localStorage.getItem(key));
+                } catch (e) {}
+            });
+
+            const backup = {
+                app: 'GAMAS 2026 - All in One',
+                backupVersion: 3,
+                exportedAt: new Date().toISOString(),
+                data: { sales, cashIncome, printHistory, inputHarian, trash, pengeluaran }
+            };
+
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+            return { blob, backup, filename: 'GAJAH_MAS_2026_BACKUP_' + stamp + '.json' };
+        }
+
         async function jalankanBackupSemuaData(opts) {
             opts = opts || {};
             try {
-                const [sales, cashIncome, printHistory, trash, pengeluaran] = await Promise.all([
-                    db.sales.toArray(),
-                    db.cashIncome.toArray(),
-                    db.printHistory.toArray(),
-                    db.trash.toArray(),
-                    (db.pengeluaran ? db.pengeluaran.toArray() : Promise.resolve([]))
-                ]);
-
-                const inputHarian = {};
-                getAllInputHarianKeys().forEach(function(key) {
-                    try {
-                        inputHarian[key] = JSON.parse(localStorage.getItem(key));
-                    } catch (e) {}
-                });
-
-                const backup = {
-                    app: 'GAMAS 2026 - All in One',
-                    backupVersion: 3,
-                    exportedAt: new Date().toISOString(),
-                    data: { sales, cashIncome, printHistory, inputHarian, trash, pengeluaran }
-                };
-
-                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const { blob, filename } = await buatBackupBlob();
 
                 if (opts.pakaiFileTetap && dukungFileTetap) {
                     // Mode "1 file tetap": tulis/timpa langsung ke handle yang
@@ -14683,10 +14734,9 @@ function t2GetCorrection(faktur) {
                     // Mode biasa: selalu bikin file baru (dipakai tombol manual,
                     // atau auto-save di browser yang tidak dukung File System Access API).
                     const url = URL.createObjectURL(blob);
-                    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'GAJAH_MAS_2026_BACKUP_' + stamp + '.json';
+                    a.download = filename;
                     document.body.appendChild(a);
                     a.click();
                     a.remove();
@@ -14853,6 +14903,246 @@ function t2GetCorrection(faktur) {
         });
 
         document.getElementById('btnSaveAllData').addEventListener('click', simpanSemuaData);
+
+        // ================================================================
+        // SAVE ALL KE GOOGLE DRIVE — hubungkan akun Google (OAuth di browser,
+        // lewat Google Identity Services), pilih folder tujuan (Google Picker),
+        // lalu upload backup .json ke folder itu — manual atau terjadwal jam
+        // tertentu (selama tab masih terbuka). Client ID WAJIB milik user sendiri
+        // karena app ini statis/tanpa server (tidak ada Client ID bawaan/shared).
+        // ================================================================
+        const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+        let driveTokenClient = null;
+        let driveAccessToken = null;
+        let driveTokenExpiresAt = 0;
+        let driveGisLoaded = false, driveGapiLoaded = false, drivePickerLoaded = false;
+
+        function loadScriptOnce(src) {
+            return new Promise(function (resolve, reject) {
+                if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = src; s.async = true; s.defer = true;
+                s.onload = resolve;
+                s.onerror = function () { reject(new Error('Gagal memuat ' + src + ' (cek koneksi internet).')); };
+                document.head.appendChild(s);
+            });
+        }
+
+        function driveGetClientId() {
+            return (localStorage.getItem('gamasDriveClientId') || '').trim();
+        }
+
+        function updateDriveStatusUI() {
+            const connEl = document.getElementById('driveConnStatus');
+            const folderEl = document.getElementById('driveFolderStatus');
+            const btnPick = document.getElementById('btnDrivePickFolder');
+            const btnSave = document.getElementById('btnDriveSaveNow');
+            const isConnected = !!driveAccessToken && Date.now() < driveTokenExpiresAt;
+            if (connEl) {
+                const last = localStorage.getItem('gamasDriveLastBackupAt');
+                connEl.textContent = isConnected
+                    ? ('🟢 Terhubung.' + (last ? ' Backup Drive terakhir: ' + last : ' Belum pernah backup ke Drive.'))
+                    : ('🔌 Belum terhubung.' + (last ? ' Backup Drive terakhir: ' + last : ''));
+            }
+            const folderId = localStorage.getItem('gamasDriveFolderId');
+            const folderName = localStorage.getItem('gamasDriveFolderName');
+            if (folderEl) folderEl.innerHTML = folderId
+                ? ('📁 Folder tujuan: <strong>' + (folderName || folderId) + '</strong>')
+                : '📁 Folder tujuan: <em>belum dipilih</em>';
+            if (btnPick) btnPick.disabled = !isConnected;
+            if (btnSave) btnSave.disabled = !(isConnected && folderId);
+        }
+
+        // Minta access token. interactive=true -> boleh munculkan popup consent Google
+        // (dipakai saat user klik tombol). interactive=false -> coba diam-diam saja
+        // (dipakai auto-save; kalau gagal, auto-save dilewati & user diberi tahu lewat toast).
+        function driveRequestToken(interactive) {
+            return new Promise(async function (resolve, reject) {
+                const clientId = driveGetClientId();
+                if (!clientId) { reject(new Error('Client ID Google belum diisi. Isi dulu di kolom Client ID lalu klik Simpan.')); return; }
+                try {
+                    if (!driveGisLoaded) {
+                        await loadScriptOnce('https://accounts.google.com/gsi/client');
+                        driveGisLoaded = true;
+                    }
+                    if (!driveTokenClient || driveTokenClient.__clientId !== clientId) {
+                        driveTokenClient = google.accounts.oauth2.initTokenClient({
+                            client_id: clientId,
+                            scope: DRIVE_SCOPE,
+                            callback: function (resp) {
+                                if (resp && resp.access_token) {
+                                    driveAccessToken = resp.access_token;
+                                    driveTokenExpiresAt = Date.now() + ((resp.expires_in || 3500) * 1000);
+                                    updateDriveStatusUI();
+                                    resolve(driveAccessToken);
+                                } else {
+                                    reject(new Error('Gagal mendapatkan izin akses Google Drive.'));
+                                }
+                            },
+                            error_callback: function (err) { reject(new Error((err && err.type) || 'Gagal menghubungkan akun Google.')); }
+                        });
+                        driveTokenClient.__clientId = clientId;
+                    }
+                    driveTokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+                } catch (e) { reject(e); }
+            });
+        }
+
+        async function driveEnsureGapiPicker() {
+            if (!driveGapiLoaded) {
+                await loadScriptOnce('https://apis.google.com/js/api.js');
+                driveGapiLoaded = true;
+            }
+            if (!drivePickerLoaded) {
+                await new Promise(function (resolve) { gapi.load('picker', resolve); });
+                drivePickerLoaded = true;
+            }
+        }
+
+        document.getElementById('btnDriveSaveClientId').addEventListener('click', function () {
+            const val = document.getElementById('driveClientIdInput').value.trim();
+            if (!val) { showToast('Isi dulu Client ID-nya.', 'warning'); return; }
+            localStorage.setItem('gamasDriveClientId', val);
+            driveTokenClient = null; // reset supaya token client dibuat ulang pakai Client ID baru
+            showToast('✅ Client ID disimpan.', 'success');
+        });
+        (function () {
+            const saved = driveGetClientId();
+            if (saved) document.getElementById('driveClientIdInput').value = saved;
+        })();
+
+        document.getElementById('btnDriveConnect').addEventListener('click', async function () {
+            try {
+                await driveRequestToken(true);
+                showToast('✅ Akun Google berhasil dihubungkan.', 'success');
+            } catch (e) {
+                showToast('❌ ' + e.message, 'warning');
+            }
+        });
+
+        document.getElementById('btnDrivePickFolder').addEventListener('click', async function () {
+            try {
+                if (!driveAccessToken) { showToast('Hubungkan akun Google dulu.', 'warning'); return; }
+                await driveEnsureGapiPicker();
+                const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+                    .setSelectFolderEnabled(true)
+                    .setIncludeFolders(true)
+                    .setMimeTypes('application/vnd.google-apps.folder');
+                const picker = new google.picker.PickerBuilder()
+                    .addView(view)
+                    .setOAuthToken(driveAccessToken)
+                    .setTitle('Pilih folder tujuan backup')
+                    .setCallback(function (data) {
+                        if (data.action === google.picker.Action.PICKED) {
+                            const doc = data.docs[0];
+                            localStorage.setItem('gamasDriveFolderId', doc.id);
+                            localStorage.setItem('gamasDriveFolderName', doc.name);
+                            updateDriveStatusUI();
+                            showToast('✅ Folder tujuan dipilih: ' + doc.name, 'success');
+                        }
+                    })
+                    .build();
+                picker.setVisible(true);
+            } catch (e) {
+                showToast('❌ ' + e.message, 'warning');
+            }
+        });
+
+        async function driveUploadBackup(showToasts) {
+            const folderId = localStorage.getItem('gamasDriveFolderId');
+            if (!driveAccessToken || Date.now() >= driveTokenExpiresAt) {
+                await driveRequestToken(false); // coba diam-diam dulu (kalau sudah pernah izinkan)
+            }
+            if (!driveAccessToken) throw new Error('Belum terhubung ke Google Drive.');
+            if (!folderId) throw new Error('Folder tujuan Drive belum dipilih.');
+
+            const { blob, filename } = await buatBackupBlob();
+            const metadata = { name: filename, parents: [folderId], mimeType: 'application/json' };
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', blob);
+
+            const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + driveAccessToken },
+                body: form
+            });
+            if (!res.ok) {
+                const errText = await res.text().catch(function () { return ''; });
+                throw new Error('Upload ke Drive gagal (HTTP ' + res.status + '). ' + errText.slice(0, 150));
+            }
+            const now = new Date().toLocaleString('id-ID');
+            localStorage.setItem('gamasDriveLastBackupAt', now);
+            localStorage.setItem('gamasDriveLastBackupDate', new Date().toDateString());
+            updateDriveStatusUI();
+            if (showToasts) showToast('✅ Backup berhasil disimpan ke Google Drive!', 'success');
+        }
+
+        document.getElementById('btnDriveSaveNow').addEventListener('click', async function () {
+            try {
+                await driveUploadBackup(true);
+            } catch (e) {
+                showToast('❌ ' + e.message, 'warning');
+            }
+        });
+
+        // ---- Auto-save ke Drive, jam tertentu, selama tab masih terbuka ----
+        (function () {
+            const chk = document.getElementById('chkDriveAutoSave');
+            const timeInput = document.getElementById('driveAutoSaveTime');
+            const slider = document.getElementById('driveAutoSaveSlider');
+            const knob = document.getElementById('driveAutoSaveKnob');
+            const desc = document.getElementById('driveAutoSaveDesc');
+
+            function renderToggleUI() {
+                const on = chk.checked;
+                slider.style.background = on ? '#22c55e' : '#cbd5e1';
+                knob.style.left = on ? '21px' : '3px';
+                desc.textContent = on ? ('Aktif, tiap jam ' + timeInput.value + ' WIB (selama tab terbuka).') : 'Mati.';
+            }
+
+            const savedOn = localStorage.getItem('gamasDriveAutoSaveOn') === '1';
+            const savedTime = localStorage.getItem('gamasDriveAutoSaveTime');
+            chk.checked = savedOn;
+            if (savedTime) timeInput.value = savedTime;
+            renderToggleUI();
+
+            chk.addEventListener('change', function () {
+                localStorage.setItem('gamasDriveAutoSaveOn', chk.checked ? '1' : '0');
+                renderToggleUI();
+            });
+            timeInput.addEventListener('change', function () {
+                localStorage.setItem('gamasDriveAutoSaveTime', timeInput.value);
+                renderToggleUI();
+            });
+
+            let driveAutoSaveChecking = false;
+            async function cekJadwalAutoSaveDrive() {
+                if (driveAutoSaveChecking) return;
+                if (localStorage.getItem('gamasDriveAutoSaveOn') !== '1') return;
+                const targetTime = localStorage.getItem('gamasDriveAutoSaveTime') || '16:00';
+                const now = new Date();
+                const nowHHMM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+                const sudahHariIni = localStorage.getItem('gamasDriveLastBackupDate') === now.toDateString();
+                if (sudahHariIni) return;
+                if (nowHHMM < targetTime) return; // belum waktunya
+                driveAutoSaveChecking = true;
+                try {
+                    await driveUploadBackup(false);
+                    showToast('☁️ Auto-save ke Google Drive berhasil (jadwal ' + targetTime + ').', 'success');
+                } catch (e) {
+                    showToast('⚠️ Auto-save ke Drive gagal: ' + e.message + ' — silakan hubungkan ulang / save manual.', 'warning');
+                } finally {
+                    driveAutoSaveChecking = false;
+                }
+            }
+            // Cek tiap 1 menit, plus 1x saat app baru dibuka (jaga-jaga kalau app dibuka
+            // setelah lewat jam target dan belum sempat backup hari itu).
+            setInterval(cekJadwalAutoSaveDrive, 60000);
+            setTimeout(cekJadwalAutoSaveDrive, 8000);
+        })();
+
+        updateDriveStatusUI();
 
         // ================================================================
         // TOGGLE AUTO-SAVE / MANUAL — di tab "Save Data All".
