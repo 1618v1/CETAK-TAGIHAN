@@ -32,6 +32,9 @@
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <style>
         /* ===== CSS LENGKAP ===== */
         * {
@@ -1571,7 +1574,7 @@
            menampilkan baris produk faktur itu. Tidak ada kolom yang dihapus. */
         .tab1-split-wrap {
             display: flex;
-            gap: 10px;
+            gap: 18px;
             align-items: flex-start;
         }
         .tab1-split-left {
@@ -1589,6 +1592,7 @@
         .tab1-split-right {
             flex: 1;
             min-width: 0;
+            padding-left: 2px;
         }
         .tab1-split-left-head {
             display: flex;
@@ -1819,7 +1823,8 @@
             gap: 8px;
             max-height: 560px;
             overflow-y: auto;
-            padding: 2px 2px 4px 2px;
+            padding: 8px 14px 14px 10px;
+            font-family: 'Space Grotesk', 'Segoe UI', -apple-system, Arial, sans-serif;
         }
         .sales-card-list.show { display: flex; }
         .table-wrap.tab1-hidden { display: none; }
@@ -1873,30 +1878,61 @@
             opacity: 0.85;
             pointer-events: none;
         }
+        /* ===== Kartu "Neural Grid" — versi futuristik/glass untuk mode Kartu ===== */
         .sales-card {
-            background: #fff;
-            border: 1px solid #e5e9f0;
-            border-radius: 14px;
-            padding: 14px 16px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+            --sc-border: rgba(37, 99, 235, 0.12);
+            --sc-bg: rgba(255, 255, 255, 0.9);
+            --sc-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+            --sc-shadow-hover: 0 20px 40px rgba(15, 23, 42, 0.14), 0 0 0 1px rgba(37, 99, 235, 0.05);
+            --sc-text: #0f172a;
+            --sc-text-soft: #475569;
+            --sc-text-muted: #94a3b8;
+            --sc-accent: #2563eb;
+            --sc-accent2: #7c3aed;
+            font-family: 'Space Grotesk', 'Segoe UI', -apple-system, Arial, sans-serif;
+            background: var(--sc-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--sc-border);
+            border-radius: 18px;
+            padding: 18px 20px 16px 20px;
+            box-shadow: var(--sc-shadow);
             position: relative;
-            transition: box-shadow .15s ease, transform .1s ease;
+            transition: transform .3s cubic-bezier(.25,.46,.45,.94), box-shadow .3s ease, border-color .3s ease, background .3s ease;
         }
         .sales-card:hover {
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.14);
+            transform: translateY(-4px);
+            border-color: rgba(37, 99, 235, 0.35);
+            box-shadow: var(--sc-shadow-hover);
         }
         .sales-card.selected {
-            border-color: #a5b4fc;
-            background: #f6f7ff;
+            border-color: rgba(37, 99, 235, 0.5);
+            background: rgba(238, 242, 255, 0.95);
+        }
+        html.gamas-dark-mode .sales-card {
+            --sc-border: rgba(0, 229, 255, 0.14);
+            --sc-bg: rgba(16, 28, 50, 0.65);
+            --sc-shadow: 0 20px 45px rgba(0, 0, 0, 0.5);
+            --sc-shadow-hover: 0 25px 50px rgba(0, 0, 0, 0.65), 0 0 40px rgba(0, 229, 255, 0.08);
+            --sc-text: #e8f0f8;
+            --sc-text-soft: #8aacc4;
+            --sc-text-muted: #4a7a94;
+            --sc-accent: #00e5ff;
+            --sc-accent2: #7c3aed;
+        }
+        html.gamas-dark-mode .sales-card.selected {
+            border-color: rgba(0, 229, 255, 0.5);
+            background: rgba(0, 229, 255, 0.07);
         }
         .sales-card-top {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
-            padding-bottom: 9px;
-            margin-bottom: 9px;
-            border-bottom: 1px solid #eef1f6;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--sc-border);
         }
         .sales-card-top-left {
             display: flex;
@@ -1908,86 +1944,244 @@
             width: 16px;
             height: 16px;
             flex-shrink: 0;
-            accent-color: #667eea;
+            accent-color: var(--sc-accent);
             cursor: pointer;
         }
         .sales-card-faktur {
-            font-size: 11px;
-            font-weight: 800;
-            color: #1f4e78;
-            background: #eef2ff;
-            border-radius: 6px;
-            padding: 3px 8px;
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--sc-accent);
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            border-radius: 8px;
+            padding: 3px 10px;
             text-decoration: none;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            letter-spacing: 0.2px;
+            font-family: 'Space Grotesk', monospace;
         }
-        .sales-card-faktur:hover { background: #e0e7ff; text-decoration: underline; }
+        html.gamas-dark-mode .sales-card-faktur {
+            color: #7ec8e3;
+            background: rgba(0, 229, 255, 0.08);
+            border-color: rgba(0, 229, 255, 0.12);
+        }
+        .sales-card-faktur:hover { background: rgba(37, 99, 235, 0.16); text-decoration: underline; }
+        html.gamas-dark-mode .sales-card-faktur:hover { background: rgba(0, 229, 255, 0.16); }
         .sales-card-date {
-            font-size: 10px;
-            color: #94a3b8;
+            font-size: 11px;
+            color: var(--sc-text-muted);
             font-weight: 600;
             flex-shrink: 0;
             white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
         .sales-card-produk {
-            font-size: 13px;
+            font-size: 15px;
             font-weight: 700;
-            color: #1e293b;
+            color: var(--sc-text);
             line-height: 1.35;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sc-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: inline-block;
+            background: var(--sc-accent);
+            box-shadow: 0 0 10px currentColor;
+            color: var(--sc-accent);
+        }
+        .sc-dot.dot-200 { background: #60a5fa; color: #60a5fa; }
+        .sc-dot.dot-400 { background: #34d399; color: #34d399; }
+        .sc-dot.dot-800 { background: #fb923c; color: #fb923c; }
+        /* ===== Tabel item di dalam 1 kartu faktur (1 faktur = 1 kartu) ===== */
+        .sc-item-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+            margin-top: 2px;
+        }
+        .sc-item-table thead th {
+            text-align: left;
+            font-weight: 600;
+            font-size: 9.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--sc-text-muted);
+            padding-bottom: 7px;
+            border-bottom: 1px solid var(--sc-border);
+        }
+        .sc-item-table thead th:last-child { text-align: right; }
+        .sc-item-table tbody td {
+            padding: 7px 0;
+            border-bottom: 1px solid var(--sc-border);
+            vertical-align: middle;
+            color: var(--sc-text-soft);
+        }
+        .sc-item-table tbody tr:last-child td { border-bottom: none; }
+        .sc-item-table tbody tr.sc-item-warning td { background: rgba(239, 68, 68, 0.06); }
+        .sc-item-table tbody tr.sc-item-confirmed td { background: rgba(245, 158, 11, 0.06); }
+        .sc-td-item {
+            display: table-cell;
+        }
+        .sc-item-table .sc-dot { margin-right: 7px; vertical-align: middle; }
+        .sc-item-name {
+            font-weight: 600;
+            color: var(--sc-text);
+            font-size: 12.5px;
+        }
+        .sc-td-qty {
+            color: var(--sc-text-soft);
+            font-weight: 500;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .sc-td-price {
+            color: var(--sc-text-soft);
+            font-size: 11.5px;
+            white-space: nowrap;
+        }
+        .sc-price-orig {
+            text-decoration: line-through;
+            color: var(--sc-text-muted);
+            font-size: 10.5px;
+            margin-right: 4px;
+        }
+        .sc-disc-badge {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.22);
+            color: #dc2626;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 6px;
+            margin-left: 3px;
+        }
+        html.gamas-dark-mode .sc-disc-badge {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #f87171;
+        }
+        .sc-td-subtotal {
+            text-align: right;
+            font-weight: 700;
+            color: var(--sc-text);
+            font-size: 12.5px;
+            white-space: nowrap;
         }
         .sales-card-qty {
-            font-size: 10.5px;
-            color: #6b7280;
-            margin-top: 3px;
+            font-size: 12px;
+            color: var(--sc-text-soft);
+            margin-top: 5px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
         }
         .sales-card-mid {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dashed #e8ecf4;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--sc-border);
         }
         .sales-card-total {
-            font-size: 15px;
-            font-weight: 800;
-            color: #1e7a46;
+            font-size: 19px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--sc-accent), var(--sc-accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.3px;
         }
         .sales-card-badges {
             display: flex;
             align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .sales-card-badges .badge {
+            display: inline-flex;
+            align-items: center;
             gap: 5px;
+            padding: 4px 13px;
+            border-radius: 40px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+        .sales-card-badges .badge.cash {
+            background: rgba(6, 182, 212, 0.1);
+            color: #0369a1;
+            border: 1px solid rgba(6, 182, 212, 0.22);
+        }
+        .sales-card-badges .badge.tempo {
+            background: rgba(245, 158, 11, 0.12);
+            color: #b45309;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+        html.gamas-dark-mode .sales-card-badges .badge.cash {
+            background: rgba(0, 229, 255, 0.08);
+            color: #00e5ff;
+            border-color: rgba(0, 229, 255, 0.18);
+            text-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+        }
+        html.gamas-dark-mode .sales-card-badges .badge.tempo {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.22);
         }
         .sales-card-foot {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            margin-top: 10px;
-            padding-top: 9px;
-            border-top: 1px solid #f1f4f9;
-            font-size: 10.5px;
-            color: #64748b;
+            gap: 5px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--sc-border);
+            font-size: 11px;
+            color: var(--sc-text-soft);
         }
-        .sales-card-foot span { display: flex; align-items: center; gap: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sales-card-foot b { color: #334155; font-weight: 700; }
-        .sales-card-foot .scf-ic { flex-shrink: 0; opacity: .7; font-size: 10px; }
+        .sales-card-foot span { display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sales-card-foot b { color: var(--sc-text); font-weight: 700; }
+        .sales-card-foot .scf-ic {
+            flex-shrink: 0;
+            opacity: .85;
+            font-size: 11px;
+            color: var(--sc-accent);
+            width: 14px;
+            text-align: center;
+        }
         .sales-card-invoice-total {
-            margin-top: 8px;
-            padding: 5px 8px;
-            background: #eef6f0;
-            border: 1px solid #d3e8da;
-            border-radius: 6px;
-            font-size: 10.5px;
-            color: #14532d;
+            margin-top: 10px;
+            padding: 6px 10px;
+            background: rgba(37, 99, 235, 0.06);
+            border: 1px solid rgba(37, 99, 235, 0.14);
+            border-radius: 8px;
+            font-size: 11px;
+            color: var(--sc-text-soft);
             text-align: right;
         }
-        .sales-card-invoice-total b { font-size: 12px; }
+        .sales-card-invoice-total b { font-size: 13px; color: var(--sc-accent); }
+        html.gamas-dark-mode .sales-card-invoice-total {
+            background: rgba(0, 229, 255, 0.05);
+            border-color: rgba(0, 229, 255, 0.12);
+        }
         .sales-card-empty {
             text-align: center;
             padding: 30px 10px;
             color: #9ca3af;
+            grid-column: 1 / -1;
             font-size: 11px;
         }
         .badge.lunas-mini {
@@ -5140,7 +5334,7 @@
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
-    gap: 10px 12px;
+    gap: 14px 16px;
 }
 #salesCardList.show .vcard-spacer {
     grid-column: 1 / -1;
@@ -6124,7 +6318,7 @@ html.gamas-dark-mode #tab1 .bdp-new .empty-msg{
    Program lama tetap berada tersembunyi sementara agar handler lama tidak
    memutus JavaScript aplikasi. Tidak ada tabel lama yang tampil di layar. */
 #tab1 > #bankDataPenjualanNew { display:none !important; }
-#tab1 > #tab1LegacyContent { display:block !important; width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; }
+#tab1 > #tab1LegacyContent { display:block !important; width:100% !important; max-width:none !important; margin:0 !important; padding:10px 16px 16px 16px !important; box-sizing:border-box !important; }
 #tab1 > #tab1LegacyContent .tab1-app-toolbar,
 #tab1 > #tab1LegacyContent .filter-bar.slim,
 #tab1 > #tab1LegacyContent .tab1-split-wrap,
@@ -11089,6 +11283,7 @@ function t2GetCorrection(faktur) {
         let salesVirtualDisplayRows = [];
         let salesVirtualIndexMap = new Map();
         let salesVirtualCardStatusMap = new Map();
+        let salesVirtualGroups = []; // baris dikelompokkan per No.Faktur -> 1 kartu per faktur
         const VIRTUAL_ROW_THRESHOLD = 100;
         const VIRTUAL_BUFFER_ROWS = 10;
         let salesRowHeightPx = 33; // dikalibrasi otomatis dari baris asli saat data sedikit
@@ -11109,61 +11304,112 @@ function t2GetCorrection(faktur) {
         const VIRTUAL_CARD_BUFFER = 6;
         let salesCardPitchPx = 150; // tinggi 1 kartu + gap, dikalibrasi otomatis dari kartu asli
 
-        function buildSalesCardHtml(r, salesIndexMap, statusMap) {
-            const jumlah = parseNumber(r.Jumlah);
-            const harga = parseNumber(r['Harga Jual']);
-            const disc = parseNumber(r.Disc);
-            const total = (jumlah * harga) - disc;
-            const gidx = salesIndexMap.get(r);
-            const isFirstInvoiceRow = salesInvoiceFirstIdx.has(gidx);
-            const cbChecked = salesRowsSelected.has(gidx) ? 'checked' : '';
-            const noFakturSafe = escapeHtml(String(r['No.Faktur'] || ''));
-            const invoiceCheckbox = isFirstInvoiceRow
-                ? `<input type="checkbox" class="sales-trash-checkbox" data-gidx="${gidx}" title="Pilih faktur ini untuk dikirim ke Cetak Tagihan" aria-label="Pilih faktur ${noFakturSafe}" ${cbChecked}>`
+        // ----------------------------------------------------------------
+        // Kelompokkan baris (1 baris = 1 produk) berdasarkan No.Faktur supaya
+        // 1 faktur = 1 kartu (dengan tabel item di dalamnya), bukan 1 kartu
+        // per baris produk seperti sebelumnya. Baris tanpa No.Faktur tetap
+        // dapat kartu sendiri-sendiri (tidak digabung dengan baris lain).
+        // ----------------------------------------------------------------
+        function groupSalesRowsByInvoice(rows) {
+            const map = new Map();
+            const order = [];
+            let anonCounter = 0;
+            rows.forEach(r => {
+                const norm = normFaktur(r['No.Faktur']);
+                const key = norm ? norm : ('__row_' + (anonCounter++));
+                let g = map.get(key);
+                if (!g) {
+                    g = { key, rows: [] };
+                    map.set(key, g);
+                    order.push(g);
+                }
+                g.rows.push(r);
+            });
+            return order;
+        }
+
+        function buildInvoiceCardHtml(group, salesIndexMap, statusMap) {
+            const rows = group.rows;
+            const first = rows[0];
+            const gidxFirst = salesIndexMap.get(first);
+            const noFakturSafe = escapeHtml(String(first['No.Faktur'] || ''));
+            const cbChecked = salesRowsSelected.has(gidxFirst) ? 'checked' : '';
+            const invoiceCheckbox = noFakturSafe
+                ? `<input type="checkbox" class="sales-trash-checkbox" data-gidx="${gidxFirst}" title="Pilih faktur ini untuk dikirim ke Cetak Tagihan" aria-label="Pilih faktur ${noFakturSafe}" ${cbChecked}>`
                 : '';
-            const sudahDiedit = !!r._Diedit;
-            const isCash = r.Pembayaran === 'Cash';
-            const statusBadge = '';
-            // ---- Peringatan Harga Di Bawah Minimal (per produk, dari Master Produk & Harga) ----
-            const hargaMinimal = getHargaMinimalProduk(r.Produk);
-            const dibawahMinimal = hargaMinimal !== null && harga > 0 && harga < hargaMinimal;
-            const dikonfirmasi = !!r._KesepakatanKhusus;
-            let cardWarnClass = '';
-            let hargaCardExtra = '';
-            if (dibawahMinimal && !dikonfirmasi) {
-                cardWarnClass = ' card-harga-warning';
-                hargaCardExtra = ` <button type="button" class="btn-kesepakatan-toggle" data-gidx="${gidx}" title="Harga di bawah minimal (Rp ${fmtRp(hargaMinimal)}). Klik untuk tandai sebagai Kesepakatan Khusus.">⚠️</button>`;
-            } else if (dibawahMinimal && dikonfirmasi) {
-                cardWarnClass = ' card-harga-confirmed';
-                hargaCardExtra = ` <button type="button" class="btn-kesepakatan-toggle" data-gidx="${gidx}" title="Kesepakatan Khusus — di bawah minimal (Rp ${fmtRp(hargaMinimal)}) tapi sudah dikonfirmasi. Klik untuk batalkan.">✅</button>`;
-            }
-            // ---- Total Faktur: total keseluruhan No.Faktur ini (semua baris produk dijumlah).
-            // Hanya ditampilkan kalau faktur ini punya LEBIH DARI 1 baris produk (nilainya beda
-            // dari total baris ini) -- supaya tidak duplikat/berulang menampilkan angka yang sama
-            // persis dengan yang sudah ditampilkan besar di atas untuk faktur 1 item. ----
-            const invKeyForTotalCard = normFaktur(r['No.Faktur']);
-            const invoiceTotalForCard = invKeyForTotalCard ? (salesInvoiceTotalMap.get(invKeyForTotalCard) || 0) : 0;
-            const totalFakturLine = (invKeyForTotalCard && invoiceTotalForCard !== total) ?
-                `<div class="sales-card-invoice-total">Total Faktur (semua item): <b>${fmtRp(invoiceTotalForCard)}</b></div>` : '';
-            return `<div class="sales-card${salesRowsSelected.has(gidx) ? ' selected' : ''}${cardWarnClass}">
+            const sudahDieditAny = rows.some(r => r._Diedit);
+            const isCash = first.Pembayaran === 'Cash';
+            const anySelected = rows.some(r => salesRowsSelected.has(salesIndexMap.get(r)));
+
+            let itemsHtml = '';
+            let sumDisplayed = 0;
+            rows.forEach(r => {
+                const jumlah = parseNumber(r.Jumlah);
+                const harga = parseNumber(r['Harga Jual']);
+                const disc = parseNumber(r.Disc);
+                const total = (jumlah * harga) - disc;
+                sumDisplayed += total;
+                const gidx = salesIndexMap.get(r);
+                // ---- Peringatan Harga Di Bawah Minimal (per produk, dari Master Produk & Harga) ----
+                const hargaMinimal = getHargaMinimalProduk(r.Produk);
+                const dibawahMinimal = hargaMinimal !== null && harga > 0 && harga < hargaMinimal;
+                const dikonfirmasi = !!r._KesepakatanKhusus;
+                let rowWarnClass = '';
+                let warnIcon = '';
+                if (dibawahMinimal && !dikonfirmasi) {
+                    rowWarnClass = ' sc-item-warning';
+                    warnIcon = ` <button type="button" class="btn-kesepakatan-toggle" data-gidx="${gidx}" title="Harga di bawah minimal (Rp ${fmtRp(hargaMinimal)}). Klik untuk tandai sebagai Kesepakatan Khusus.">⚠️</button>`;
+                } else if (dibawahMinimal && dikonfirmasi) {
+                    rowWarnClass = ' sc-item-confirmed';
+                    warnIcon = ` <button type="button" class="btn-kesepakatan-toggle" data-gidx="${gidx}" title="Kesepakatan Khusus — di bawah minimal (Rp ${fmtRp(hargaMinimal)}) tapi sudah dikonfirmasi. Klik untuk batalkan.">✅</button>`;
+                }
+                const produkStr = r.Produk || '';
+                let dotClass = 'dot-default';
+                if (/800/.test(produkStr)) dotClass = 'dot-800';
+                else if (/400/.test(produkStr)) dotClass = 'dot-400';
+                else if (/200/.test(produkStr)) dotClass = 'dot-200';
+                const priceCell = disc > 0
+                    ? `<span class="sc-price-orig">${fmtRp(harga)}</span><span class="sc-disc-badge">-${fmtRp(disc)}</span>`
+                    : fmtRp(harga);
+                itemsHtml += `<tr class="${rowWarnClass.trim()}">
+                        <td class="sc-td-item"><span class="sc-dot ${dotClass}"></span><span class="sc-item-name">${escapeHtml(produkStr)}</span></td>
+                        <td class="sc-td-qty">${jumlah} ${escapeHtml(r.Satuan || '')}</td>
+                        <td class="sc-td-price">${priceCell}${warnIcon}</td>
+                        <td class="sc-td-subtotal">${fmtRp(total)}</td>
+                    </tr>`;
+            });
+
+            // ---- Total Faktur "resmi" (dari seluruh dataset, bisa beda dari jumlah
+            // baris yang sedang tampil kalau lagi difilter) -- hanya ditampilkan
+            // kalau berbeda dari jumlah baris yang sedang ditampilkan di kartu ini. ----
+            const isRealInvoice = !group.key.startsWith('__row_');
+            const invoiceTotalFull = isRealInvoice ? (salesInvoiceTotalMap.get(group.key) || 0) : sumDisplayed;
+            const totalFakturLine = (isRealInvoice && invoiceTotalFull !== sumDisplayed) ?
+                `<div class="sales-card-invoice-total">Total Faktur (semua item): <b>${fmtRp(invoiceTotalFull)}</b></div>` : '';
+
+            return `<div class="sales-card${anySelected ? ' selected' : ''}">
                     <div class="sales-card-top">
                         <div class="sales-card-top-left">
                             ${invoiceCheckbox}
-                            ${noFakturSafe ? `<a href="#" class="tab1-faktur-link sales-card-faktur" data-faktur="${noFakturSafe}" onclick="event.preventDefault();event.stopPropagation();openSalesDetailModal(this.dataset.faktur);return false;">${sudahDiedit ? '✏️ ' : ''}${noFakturSafe}</a>` : '<span class="sales-card-faktur">—</span>'}
+                            ${noFakturSafe ? `<a href="#" class="tab1-faktur-link sales-card-faktur" data-faktur="${noFakturSafe}" onclick="event.preventDefault();event.stopPropagation();openSalesDetailModal(this.dataset.faktur);return false;">${sudahDieditAny ? '✏️ ' : ''}${noFakturSafe}</a>` : '<span class="sales-card-faktur">—</span>'}
                         </div>
-                        <span class="sales-card-date">📅 ${fmtTanggal(r.Tanggal)}</span>
+                        <span class="sales-card-date"><i class="bi bi-calendar3"></i> ${fmtTanggal(first.Tanggal)}</span>
                     </div>
-                    <div class="sales-card-produk">${escapeHtml(r.Produk || '')}</div>
-                    <div class="sales-card-qty">${jumlah} ${escapeHtml(r.Satuan || '')} × ${fmtRp(harga)}${disc ? ' − disc ' + fmtRp(disc) : ''}${hargaCardExtra}</div>
+                    <table class="sc-item-table">
+                        <thead>
+                            <tr><th>Item</th><th>Qty</th><th>Harga/Diskon</th><th style="text-align:right;">Subtotal</th></tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
                     <div class="sales-card-mid">
-                        <span class="sales-card-total">${fmtRp(total)}</span>
-                        <span class="sales-card-badges"><span class="badge ${isCash ? 'cash' : 'tempo'}">${r.Pembayaran || 'Tempo'}</span>${statusBadge}</span>
+                        <span class="sales-card-badges"><span class="badge ${isCash ? 'cash' : 'tempo'}">${first.Pembayaran || 'Tempo'}</span></span>
+                        <span class="sales-card-total">${fmtRp(sumDisplayed)}</span>
                     </div>
                     ${totalFakturLine}
                     <div class="sales-card-foot">
-                        <span><span class="scf-ic">👤</span><b>${escapeHtml(r.Sales || '-')}</b></span>
-                        <span><span class="scf-ic">🏪</span>${escapeHtml(r.Customer || '-')}</span>
-                        <span><span class="scf-ic">📍</span>${escapeHtml(r.Alamat || '-')}</span>
+                        <span><span class="scf-ic"><i class="bi bi-person-fill"></i></span><b>${escapeHtml(first.Sales || '-')}</b></span>
+                        <span><span class="scf-ic"><i class="bi bi-shop"></i></span>${escapeHtml(first.Customer || '-')}</span>
+                        <span><span class="scf-ic"><i class="bi bi-geo-alt-fill"></i></span>${escapeHtml(first.Alamat || '-')}</span>
                     </div>
                 </div>`;
         }
@@ -11182,14 +11428,14 @@ function t2GetCorrection(faktur) {
         function renderSalesCardsWindow() {
             const wrap = document.getElementById('salesCardList');
             if (!wrap) return;
-            const rows = salesVirtualDisplayRows;
+            const groups = salesVirtualGroups;
             const salesIndexMap = salesVirtualIndexMap;
             const statusMap = salesVirtualCardStatusMap;
-            if (!rows || rows.length === 0) return;
-            const total = rows.length;
+            if (!groups || groups.length === 0) return;
+            const total = groups.length;
             if (total <= VIRTUAL_CARD_THRESHOLD) {
                 // Data sedikit: render biasa seperti sebelumnya (tidak perlu virtualisasi).
-                wrap.innerHTML = rows.map(r => buildSalesCardHtml(r, salesIndexMap, statusMap)).join('');
+                wrap.innerHTML = groups.map(g => buildInvoiceCardHtml(g, salesIndexMap, statusMap)).join('');
                 calibrateSalesCardPitch(wrap);
                 return;
             }
@@ -11206,7 +11452,7 @@ function t2GetCorrection(faktur) {
             let html = '';
             if (topH > 0) html +=
                 `<div class="vcard-spacer" aria-hidden="true" style="height:${topH}px;flex:0 0 auto;width:100%;"></div>`;
-            for (let i = start; i < end; i++) html += buildSalesCardHtml(rows[i], salesIndexMap, statusMap);
+            for (let i = start; i < end; i++) html += buildInvoiceCardHtml(groups[i], salesIndexMap, statusMap);
             if (botH > 0) html +=
                 `<div class="vcard-spacer" aria-hidden="true" style="height:${botH}px;flex:0 0 auto;width:100%;"></div>`;
             wrap.innerHTML = html;
@@ -11218,7 +11464,7 @@ function t2GetCorrection(faktur) {
             let raf = null;
             wrap.addEventListener('scroll', function() {
                 if (tab1ViewMode !== 'card') return;
-                if (salesVirtualDisplayRows.length <= VIRTUAL_CARD_THRESHOLD) return;
+                if (salesVirtualGroups.length <= VIRTUAL_CARD_THRESHOLD) return;
                 if (raf) return;
                 raf = requestAnimationFrame(function() {
                     raf = null;
@@ -11235,11 +11481,14 @@ function t2GetCorrection(faktur) {
             salesVirtualDisplayRows = displayRows;
             salesVirtualIndexMap = salesIndexMap;
             salesVirtualCardStatusMap = statusMap;
+            // 1 faktur (No.Faktur sama) = 1 kartu, jadi baris-baris produknya
+            // digabung dulu di sini sebelum dirender/divirtualisasi.
+            salesVirtualGroups = groupSalesRowsByInvoice(displayRows);
             if (displayRows.length === 0) {
-                wrap.innerHTML = `<div class="sales-card-empty">📂 ${tab1SelectedFaktur ? 'Faktur ini tidak ada di data yang tampil saat ini.' : 'Tidak ada data. Import Excel atau Tambah transaksi.'}</div>`;
+                wrap.innerHTML = `<div class="sales-card-empty"><i class="bi bi-inbox"></i> ${tab1SelectedFaktur ? 'Faktur ini tidak ada di data yang tampil saat ini.' : 'Tidak ada data. Import Excel atau Tambah transaksi.'}</div>`;
                 return;
             }
-            if (displayRows.length > VIRTUAL_CARD_THRESHOLD) wrap.scrollTop = 0; // data berganti -> mulai dari atas
+            if (salesVirtualGroups.length > VIRTUAL_CARD_THRESHOLD) wrap.scrollTop = 0; // data berganti -> mulai dari atas
             renderSalesCardsWindow();
         }
         // ================================================================
@@ -11317,6 +11566,7 @@ function t2GetCorrection(faktur) {
                 } else {
                     indices.forEach(i => salesRowsSelected.delete(i));
                 }
+                updateSalesSelectedInfo();
                 renderSalesCards(salesVirtualDisplayRows, salesVirtualIndexMap, salesVirtualCardStatusMap || new Map());
             }
         });
