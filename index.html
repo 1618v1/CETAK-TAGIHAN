@@ -7152,6 +7152,21 @@ font:600 12px/1.3 Arial,sans-serif;display:none;box-shadow:0 4px 18px rgba(0,0,0
 </select>
                         (file backup akan otomatis ter-download, tanpa perlu klik apa-apa).
                     </div>
+<div class="no-print" style="margin-top:14px; padding:10px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;">
+<div style="font-size:11px; color:#166534; margin-bottom:8px;">
+<strong>📁 Backup ke Folder Lokal</strong> — pilih 1 folder di laptop/PC (boleh folder biasa, atau folder sync <strong>Google Drive Desktop/OneDrive</strong> supaya otomatis ke-cloud juga). Tidak perlu akun/Client ID apapun. Hanya didukung Chrome/Edge di laptop/PC, dan hanya jalan selama tab ini terbuka.
+                    </div>
+<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+<button class="btn btn-outline" id="btnPilihFolderBackup" style="font-size:12px;padding:6px 12px;" type="button">📁 Pilih Folder Backup</button>
+<button class="btn btn-outline" id="btnRestoreFolderBackup" style="font-size:12px;padding:6px 12px;display:none;" type="button">🔁 Pulihkan dari Folder Backup</button>
+<span style="font-size:11px;">Folder: <strong id="folderBackupLabel">Belum dipilih</strong></span>
+</div>
+<div id="folderBackupStatus" style="font-size:10px;color:#6b7280;margin-bottom:8px;"></div>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;color:#166534;">
+<input id="chkAutoSaveFolder" style="width:auto;" type="checkbox"/>
+🔁 Auto Save Backup JSON ke folder ini (cek tiap 1 menit, hanya nulis kalau ada perubahan data)
+                    </label>
+</div>
 <div class="save-summary-grid">
 <div class="summary-item">
 <div class="number" id="sumSales">0</div>
@@ -14655,6 +14670,134 @@ function t2GetCorrection(faktur) {
         }
         const dukungFileTetap = ('showSaveFilePicker' in window);
 
+        // ================================================================
+        // BACKUP KE FOLDER LOKAL (ditiru dari app "DATACENTER") — alternatif
+        // yang lebih simpel dari Google Drive OAuth di atas: TIDAK perlu
+        // Client ID sama sekali. User pilih 1 folder di komputernya (boleh
+        // folder biasa, ATAU folder sync Google Drive Desktop / OneDrive —
+        // kalau dipilih folder sync itu, file backup otomatis ikut ter-upload
+        // ke cloud oleh aplikasi sync-nya, tanpa app ini perlu tahu soal cloud
+        // sama sekali). App menulis 1 file tetap di folder itu, ditimpa ulang
+        // tiap kali data berubah (dicek berkala, hanya nulis kalau memang ada
+        // perubahan — supaya tidak nulis sia-sia tiap beberapa menit).
+        // Catatan: sama seperti auto-save lain, ini hanya jalan selama tab
+        // masih terbuka, dan hanya didukung Chrome/Edge versi desktop.
+        // ================================================================
+        const dukungFolderBackup = ('showDirectoryPicker' in window);
+        const FOLDER_BACKUP_FILENAME = 'GAJAH_MAS_2026_BACKUP_LATEST.json';
+        let folderBackupHandle = null;
+
+        async function simpanHandleFolderBackup(handle) {
+            const idb = await bukaDbHandleAutoSave();
+            return new Promise(function (resolve, reject) {
+                const tx = idb.transaction('handles', 'readwrite');
+                tx.objectStore('handles').put(handle, 'backupFolder');
+                tx.oncomplete = function () { resolve(); };
+                tx.onerror = function () { reject(tx.error); };
+            });
+        }
+        async function ambilHandleFolderBackup() {
+            const idb = await bukaDbHandleAutoSave();
+            return new Promise(function (resolve, reject) {
+                const tx = idb.transaction('handles', 'readonly');
+                const req = tx.objectStore('handles').get('backupFolder');
+                req.onsuccess = function () { resolve(req.result || null); };
+                req.onerror = function () { reject(req.error); };
+            });
+        }
+
+        function setFolderBackupStatus(msg, isErr) {
+            const el = document.getElementById('folderBackupStatus');
+            if (el) { el.textContent = msg || ''; el.style.color = isErr ? '#b91c1c' : '#6b7280'; }
+        }
+        function updateFolderBackupLabel() {
+            const el = document.getElementById('folderBackupLabel');
+            if (el) el.textContent = folderBackupHandle ? ('📁 Aktif: ' + folderBackupHandle.name) : 'Belum dipilih';
+            const btnRestore = document.getElementById('btnRestoreFolderBackup');
+            if (btnRestore) btnRestore.style.display = folderBackupHandle ? 'inline-block' : 'none';
+        }
+        async function pastikanIzinFolderBackup() {
+            if (!folderBackupHandle) return false;
+            try {
+                let izin = await folderBackupHandle.queryPermission({ mode: 'readwrite' });
+                if (izin !== 'granted') izin = await folderBackupHandle.requestPermission({ mode: 'readwrite' });
+                return izin === 'granted';
+            } catch (e) { return false; }
+        }
+
+        async function pilihFolderBackupLokal() {
+            if (!dukungFolderBackup) {
+                showToast('⚠️ Fitur ini hanya didukung Chrome/Edge di laptop/PC. Pakai "Save All Data" manual sebagai gantinya.', 'warning');
+                return;
+            }
+            try {
+                const handle = await window.showDirectoryPicker();
+                const izin = await handle.requestPermission({ mode: 'readwrite' });
+                if (izin !== 'granted') { showToast('❌ Izin akses folder ditolak.', 'warning'); return; }
+                folderBackupHandle = handle;
+                await simpanHandleFolderBackup(handle);
+                updateFolderBackupLabel();
+                await tulisBackupKeFolderLokal(false);
+                showToast('✅ Folder backup dipilih: "' + handle.name + '". Backup akan otomatis ditulis/ditimpa di folder ini saat ada perubahan data.', 'success');
+            } catch (e) {
+                if (e && e.name !== 'AbortError') showToast('❌ Gagal memilih folder: ' + e.message, 'warning');
+            }
+        }
+
+        // Nulis backup ke folder lokal, TAPI dilewati kalau isinya sama persis
+        // dengan backup terakhir (dirty-check berbasis konten, bukan lewat
+        // hooking tiap fungsi ubah-data satu-satu -- lebih ringkas & tetap akurat).
+        let lastFolderBackupContentLen = null;
+        async function tulisBackupKeFolderLokal(showToasts) {
+            if (!folderBackupHandle) return false;
+            const izinOk = await pastikanIzinFolderBackup();
+            if (!izinOk) { setFolderBackupStatus('Izin folder dicabut — pilih ulang foldernya.', true); return false; }
+            try {
+                const { blob } = await buatBackupBlob();
+                const text = await blob.text();
+                if (text.length === lastFolderBackupContentLen) {
+                    setFolderBackupStatus('Tidak ada perubahan data sejak backup terakhir — dilewati. (' + new Date().toLocaleTimeString('id-ID') + ')', false);
+                    return true;
+                }
+                const fileHandle = await folderBackupHandle.getFileHandle(FOLDER_BACKUP_FILENAME, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(text);
+                await writable.close();
+                lastFolderBackupContentLen = text.length;
+                const now = new Date().toLocaleString('id-ID');
+                localStorage.setItem('gmFolderBackupLastAt', now);
+                setFolderBackupStatus('Backup folder tersimpan ✓ ' + new Date().toLocaleTimeString('id-ID'), false);
+                if (showToasts) showToast('✅ Backup ke folder lokal berhasil.', 'success');
+                return true;
+            } catch (e) {
+                setFolderBackupStatus('Gagal backup ke folder: ' + e.message, true);
+                if (showToasts) showToast('❌ Gagal backup ke folder: ' + e.message, 'warning');
+                return false;
+            }
+        }
+
+        async function pulihkanDariFolderBackup() {
+            if (!folderBackupHandle) { showToast('Pilih folder backup dulu.', 'warning'); return; }
+            const izinOk = await pastikanIzinFolderBackup();
+            if (!izinOk) { showToast('Izin folder ditolak/dicabut. Pilih ulang foldernya.', 'warning'); return; }
+            try {
+                const fileHandle = await folderBackupHandle.getFileHandle(FOLDER_BACKUP_FILENAME);
+                const file = await fileHandle.getFile();
+                await muatSemuaDataDariFile(file);
+            } catch (e) {
+                showToast('❌ Belum ada file backup di folder ini, atau gagal memulihkan: ' + e.message, 'warning');
+            }
+        }
+
+        (async function initFolderBackupOnLoad() {
+            if (!dukungFolderBackup) { updateFolderBackupLabel(); return; }
+            try {
+                const handle = await ambilHandleFolderBackup();
+                if (handle) { folderBackupHandle = handle; }
+            } catch (e) {}
+            updateFolderBackupLabel();
+        })();
+
         // Minta user pilih/buat file backup SEKALI. Dipanggil saat auto-save
         // pertama kali diaktifkan.
         async function pilihFileTetapAutoSave() {
@@ -15257,6 +15400,32 @@ function t2GetCorrection(faktur) {
                 if (chk.checked) mulaiTimer(); // reset timer pakai interval baru
             });
         })();
+        // ---- Backup ke Folder Lokal: tombol & toggle auto-save ----
+        document.getElementById('btnPilihFolderBackup').addEventListener('click', pilihFolderBackupLokal);
+        document.getElementById('btnRestoreFolderBackup').addEventListener('click', pulihkanDariFolderBackup);
+        (function setupAutoSaveFolderToggle() {
+            const chk = document.getElementById('chkAutoSaveFolder');
+            if (!chk) return;
+            let timerId = null;
+            function mulai() {
+                if (timerId) clearInterval(timerId);
+                timerId = setInterval(function () { tulisBackupKeFolderLokal(false); }, 60000);
+            }
+            function berhenti() { if (timerId) { clearInterval(timerId); timerId = null; } }
+            const savedAktif = localStorage.getItem('gmAutoSaveFolderEnabled') === '1';
+            chk.checked = savedAktif;
+            if (savedAktif) mulai();
+            chk.addEventListener('change', async function () {
+                if (chk.checked && !folderBackupHandle) {
+                    try { await pilihFolderBackupLokal(); } catch (e) {}
+                    if (!folderBackupHandle) { chk.checked = false; return; }
+                }
+                localStorage.setItem('gmAutoSaveFolderEnabled', chk.checked ? '1' : '0');
+                if (chk.checked) { mulai(); showToast('✅ Auto Save Backup JSON ke folder diaktifkan.', 'success'); }
+                else { berhenti(); showToast('ℹ️ Auto Save ke folder dimatikan.', 'info'); }
+            });
+        })();
+
         document.getElementById('btnRestoreAllData').addEventListener('click', function() {
             document.getElementById('restoreAllFileInput').click();
         });
