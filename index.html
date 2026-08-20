@@ -14,6 +14,15 @@
             window.matchMedia('(display-mode: fullscreen)').matches) {
             document.documentElement.setAttribute('data-pwa-standalone', 'true');
         }
+
+        // Terapkan mode gelap/terang SEDINI MUNGKIN (sebelum body dirender) supaya
+        // tidak ada "kedip" putih sesaat sebelum berubah ke gelap saat reload.
+        (function () {
+            try {
+                var saved = localStorage.getItem('gamasDarkMode');
+                if (saved === '1') document.documentElement.classList.add('gamas-dark-mode');
+            } catch (e) {}
+        })();
     </script>
 
 <meta content="#1f4e78" name="theme-color"/>
@@ -1262,6 +1271,46 @@
             flex: 0 0 auto;
             min-width: 150px;
         }
+        /* Dropdown filter periode/bulan (mis. "Agustus 2026") — sebelumnya pakai
+           tampilan default browser (jadul). Dibuat konsisten dengan fc-search di atas:
+           pill rounded, custom panah, hover/focus effect, dan dukung mode gelap. */
+        .filter-row-main .fc-periode select {
+            width: 100%;
+            height: 32px;
+            padding: 0 30px 0 12px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #1f2937;
+            background: #ffffff url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 8px center;
+            background-size: 15px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .filter-row-main .fc-periode select:hover {
+            border-color: #a5b4fc;
+        }
+        .filter-row-main .fc-periode select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+        }
+        html.gamas-dark-mode .filter-row-main .fc-periode select {
+            background-color: #111827;
+            color: #e5e7eb;
+            border-color: #475569;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393c5fd' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 15px;
+        }
+        html.gamas-dark-mode .filter-row-main .fc-periode select:hover { border-color: #64748b; }
+        html.gamas-dark-mode .filter-row-main .fc-periode select:focus { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(147,197,253,0.15); }
         .filter-row-main .fc-reset {
             flex: 0 0 auto;
             height: 32px;
@@ -1960,7 +2009,7 @@
             font-size: 11.5px;
             font-weight: 700;
         }
-        .sales-anomali-banner.show { display: flex; }
+        .sales-anomali-banner.show { display: none !important; } /* banner popup anomali dimatikan permanen atas permintaan user */
         .sales-anomali-banner-actions {
             display: flex;
             align-items: center;
@@ -6082,10 +6131,12 @@ html.gamas-dark-mode #tab1 .bdp-new .empty-msg{
 /* Font kontras untuk terang/gelap */
 html:not(.gamas-dark-mode) #tab1 > #tab1LegacyContent { color:#1f2937 !important; background:#f8fafc !important; }
 html.gamas-dark-mode #tab1 > #tab1LegacyContent { color:#e5e7eb !important; background:#0b1220 !important; }
-html:not(.gamas-dark-mode) #tab1 > #tab1LegacyContent .fc-search input,
-html:not(.gamas-dark-mode) #tab1 > #tab1LegacyContent .fc-periode select { color:#1f2937 !important; background:#fff !important; }
-html.gamas-dark-mode #tab1 > #tab1LegacyContent .fc-search input,
-html.gamas-dark-mode #tab1 > #tab1LegacyContent .fc-periode select { color:#e5e7eb !important; background:#111827 !important; }
+html:not(.gamas-dark-mode) #tab1 > #tab1LegacyContent .fc-search input { color:#1f2937 !important; background:#fff !important; }
+html.gamas-dark-mode #tab1 > #tab1LegacyContent .fc-search input { color:#e5e7eb !important; background:#111827 !important; }
+/* .fc-periode select warna/panahnya sudah diatur di style "fc-periode select" (termasuk
+   varian mode gelap) supaya panah custom-nya tidak ketimpa oleh shorthand background di sini. */
+html:not(.gamas-dark-mode) #tab1 > #tab1LegacyContent .fc-periode select { color:#1f2937 !important; }
+html.gamas-dark-mode #tab1 > #tab1LegacyContent .fc-periode select { color:#e5e7eb !important; }
 </style>
 
 <style id="bank-data-status-chip-fix">
@@ -6354,6 +6405,7 @@ font:600 12px/1.3 Arial,sans-serif;display:none;box-shadow:0 4px 18px rgba(0,0,0
 <span class="sub">Kerja</span>
 </div>
 <div style="display:flex; gap:8px; align-items:center;">
+<button id="btnToggleDarkMode" style="border-radius:6px; padding:5px 10px; font-size:14px; line-height:1; cursor:pointer; white-space:nowrap; font-weight:700; background:rgba(255,255,255,0.14); color:#fff; border:1px solid rgba(255,255,255,0.25);" title="Ganti mode gelap/terang" type="button">🌙</button>
 <button id="btnInstallApp" style="display:none; border-radius:6px; padding:5px 12px; font-size:11px; cursor:pointer; white-space:nowrap; font-weight:700; background:#10b981; color:#fff; border:1px solid rgba(255,255,255,0.25);" type="button">⬇️ Instal Aplikasi</button>
 </div>
 </header>
@@ -11882,6 +11934,24 @@ function t2GetCorrection(faktur) {
             return `⚠️ Ditemukan ${total} kemungkinan anomali di Bank Data Penjualan: ${parts.join(', ')}.`;
         }
 
+        // ===== Toggle Mode Gelap/Terang (header) =====
+        (function () {
+            const btn = document.getElementById('btnToggleDarkMode');
+            if (!btn) return;
+            function syncIcon() {
+                const isDark = document.documentElement.classList.contains('gamas-dark-mode');
+                btn.textContent = isDark ? '☀️' : '🌙';
+                btn.title = isDark ? 'Ganti ke mode terang' : 'Ganti ke mode gelap';
+            }
+            btn.addEventListener('click', function () {
+                document.documentElement.classList.toggle('gamas-dark-mode');
+                const isDark = document.documentElement.classList.contains('gamas-dark-mode');
+                try { localStorage.setItem('gamasDarkMode', isDark ? '1' : '0'); } catch (e) {}
+                syncIcon();
+            });
+            syncIcon();
+        })();
+
         let salesAnomaliBannerTimer = null;
         const SALES_ANOMALI_BANNER_DURATION = 60000; // 60 detik — sebelumnya 15dtk terlalu cepat untuk sempat dibaca/diklik
         function startSalesAnomaliBannerTimer() {
@@ -11890,16 +11960,14 @@ function t2GetCorrection(faktur) {
             salesAnomaliBannerTimer = setTimeout(() => { banner.classList.remove('show'); }, SALES_ANOMALI_BANNER_DURATION);
         }
         function checkAndShowSalesAnomaliBanner() {
+            // Banner popup otomatis "Ditemukan N kemungkinan anomali..." dimatikan permanen
+            // atas permintaan user (mengganggu, sering muncul di setiap buka/import data).
+            // Pengecekan anomali TETAP bisa dilakukan manual lewat tombol
+            // "🔍 Diagnostik Data" / "🧹 Bersihkan Baris Hantu" di menu Bank Data Penjualan.
             const banner = document.getElementById('salesAnomaliBanner');
-            const msgEl = document.getElementById('salesAnomaliBannerMsg');
-            if (!banner || !msgEl) return;
+            if (banner) banner.classList.remove('show');
             if (salesAnomaliBannerTimer) { clearTimeout(salesAnomaliBannerTimer); salesAnomaliBannerTimer = null; }
-            const result = detectSalesAnomali(salesData);
-            const msg = formatSalesAnomaliMsg(result);
-            if (!msg) { banner.classList.remove('show'); return; }
-            msgEl.textContent = msg;
-            banner.classList.add('show');
-            startSalesAnomaliBannerTimer();
+            return;
         }
         // Jeda hitung mundur selama mouse berada di atas banner (mis. lagi dibaca), supaya
         // tidak tiba-tiba hilang saat masih ingin dibaca/diklik; lanjut lagi 60dtk saat mouse keluar.
