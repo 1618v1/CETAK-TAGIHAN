@@ -5372,6 +5372,9 @@
                                 <button class="btn btn-outline" id="btnExportAnomaliHarga" style="flex:1;margin:0;border-color:#9b2c2c;color:#9b2c2c;" title="Download semua transaksi yang Harga Jual-nya di bawah Harga Minimal produk (Master Produk &amp; Harga, Tab 8), termasuk yang sudah ditandai Kesepakatan Khusus">⚠️ Download Anomali Harga</button>
                             </div>
                             <div class="menu-item">
+                                <button class="btn btn-outline" id="btnDiagnostikSales" style="flex:1;margin:0;border-color:#0891b2;color:#0891b2;" title="Cek data bulan berjalan: baris duplikat persis, baris dengan format Tanggal tidak valid, dan baris hantu. Ini HANYA laporan (read-only), tidak menghapus/mengubah apapun.">🔍 Diagnostik Data</button>
+                            </div>
+                            <div class="menu-item">
                                 <button class="btn btn-outline" id="btnBersihkanHantu" style="flex:1;margin:0;border-color:#0d6efd;color:#0d6efd;" title="Hapus pasangan baris minus/plus akibat edit faktur (baris hantu), tandai sisanya untuk diperiksa manual">🧹 Bersihkan Baris Hantu</button>
                             </div>
                             <div class="menu-item">
@@ -8748,6 +8751,82 @@
             const d = new Date(s + 'T00:00:00');
             return !isNaN(d.getTime());
         }
+
+        // ================================================================
+        // DIAGNOSTIK DATA (READ-ONLY) — Bank Data Penjualan
+        // Tidak menghapus/mengubah apapun. Tujuannya cuma melaporkan 3 hal
+        // yang paling sering bikin angka di kartu Ringkasan "kelihatan salah"
+        // atau bikin baris yang baru diimpor "hilang" tanpa pesan error:
+        //   1) Baris dengan Tanggal BUKAN format ISO YYYY-MM-DD (baris begini
+        //      tidak akan pernah cocok dengan filter bulan manapun, jadi
+        //      tersembunyi dari tabel & dari kartu Ringkasan).
+        //   2) Baris DUPLIKAT PERSIS (isi sama plek-ketiplek) — kalau ada,
+        //      nilainya ikut dihitung DUA KALI (atau lebih) di kartu
+        //      Penjualan Cash/Tempo & Total Faktur.
+        //   3) Baris HANTU (pasangan minus/plus akibat edit faktur) — net
+        //      dampaknya nol ke Rupiah, tapi bikin jumlah baris tidak wajar.
+        // Catatan: sengaja TIDAK memakai detectSalesAnomali()/checkAndShow-
+        // SalesAnomaliBanner() karena keduanya sudah dinonaktifkan (lihat
+        // #disable-sales-anomaly-scanner) -- fungsi ini manggil langsung ke
+        // cariDuplikatPersisSales() & cariBarisHantuSales() yang masih utuh,
+        // dan HANYA melaporkan, tidak pernah menghapus otomatis.
+        // ================================================================
+        function jalankanDiagnostikSales() {
+            if (!Array.isArray(salesData) || !salesData.length) {
+                alert('Belum ada data di Bank Data Penjualan.');
+                return;
+            }
+            const periode = new Date().toISOString().slice(0, 7);
+            const labelBulan = periodLabel(periode);
+
+            // 1) Tanggal tidak valid (dicek di SEMUA data, bukan cuma bulan ini,
+            //    karena baris begini justru TIDAK PUNYA bulan yang valid).
+            const tglInvalid = [];
+            salesData.forEach((r, idx) => {
+                const t = String(r.Tanggal || '').trim();
+                if (!isValidIsoTanggal(t)) tglInvalid.push({ idx, faktur: r['No.Faktur'], produk: r.Produk, tanggalMentah: t });
+            });
+
+            // 2) Duplikat persis (dicek di SEMUA data, tapi dilaporkan juga
+            //    berapa yang jatuh di bulan berjalan supaya relevan ke kartu Ringkasan).
+            const { duplicateIdx, duplicateGroups } = cariDuplikatPersisSales(salesData);
+            let dupBulanIni = 0, dupRpBulanIni = 0;
+            duplicateIdx.forEach(idx => {
+                const r = salesData[idx];
+                if (r && rkPeriodKey(r.Tanggal) === periode) { dupBulanIni++; dupRpBulanIni += parseNumber(r.Total); }
+            });
+
+            // 3) Baris hantu (informasi saja, net Rupiah = 0).
+            const { toDeleteIdx, toFlagIdx } = cariBarisHantuSales(salesData);
+
+            const fmtEx = (r) => `• Faktur ${r.faktur || '-'} / ${r.produk || '-'} -> Tanggal mentah: "${r.tanggalMentah}"`;
+            let pesan = `📋 DIAGNOSTIK BANK DATA PENJUALAN (read-only, tidak ada yang dihapus)\n\n`;
+            pesan += `Total baris di database (semua waktu): ${salesData.length}\n\n`;
+
+            pesan += `1) TANGGAL TIDAK VALID: ${tglInvalid.length} baris\n`;
+            if (tglInvalid.length) {
+                pesan += `   (baris ini TIDAK IKUT ke filter bulan manapun -- kemungkinan besar ini sebabnya data terbaru "hilang")\n`;
+                pesan += tglInvalid.slice(0, 15).map(fmtEx).join('\n') + '\n';
+                if (tglInvalid.length > 15) pesan += `   ...dan ${tglInvalid.length - 15} baris lainnya.\n`;
+            } else {
+                pesan += `   Tidak ada. Semua baris punya format Tanggal yang valid.\n`;
+            }
+
+            pesan += `\n2) DUPLIKAT PERSIS (semua waktu): ${duplicateIdx.length} baris\n`;
+            pesan += `   Di bulan ${labelBulan}: ${dupBulanIni} baris duplikat, totalnya Rp ${Math.round(dupRpBulanIni).toLocaleString('id-ID')} (nilai ini KEMUNGKINAN ikut dihitung dobel di kartu Penjualan Cash/Tempo bulan ini)\n`;
+            if (duplicateGroups.length) {
+                pesan += duplicateGroups.slice(0, 10).map(g => {
+                    const r = salesData[g.keepIdx];
+                    return `   • Faktur ${r['No.Faktur'] || '-'} / ${r.Produk || '-'} (${r.Tanggal || '-'}) -- ${g.extraIdx.length + 1} salinan`;
+                }).join('\n') + '\n';
+                if (duplicateGroups.length > 10) pesan += `   ...dan ${duplicateGroups.length - 10} kelompok duplikat lainnya.\n`;
+            }
+
+            pesan += `\n3) BARIS HANTU (pasangan minus/plus edit faktur, net Rp = 0): ${toDeleteIdx.length} pasang, ${toFlagIdx.length} minus tanpa pasangan (perlu cek manual)\n`;
+
+            alert(pesan);
+        }
+        document.getElementById('btnDiagnostikSales').addEventListener('click', jalankanDiagnostikSales);
 
         function salesExcelCell(row, map, key) {
             return map[key] === undefined ? '' : row[map[key]];
