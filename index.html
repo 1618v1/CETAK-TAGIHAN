@@ -637,6 +637,28 @@
         .selection-toolbar .btn-sel-cancel:hover::before {
             left: 150%;
         }
+        .selection-toolbar .btn-sel-close {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #94a3b8;
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s ease;
+        }
+        .selection-toolbar .btn-sel-close:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #fff;
+        }
         .selection-toolbar .btn-sel-trash {
             background: rgba(245, 158, 11, 0.15);
             border: 1px solid rgba(245, 158, 11, 0.3);
@@ -720,6 +742,145 @@
         }
         .selection-toolbar .btn-sel-send:hover::before {
             left: 150%;
+        }
+
+
+        /* ===== TAMPILAN BARU: POPUP PILIH FAKTUR =====
+           Hanya visual. ID dan logika JavaScript tidak diubah. */
+        .selection-toolbar {
+            gap: 10px;
+            background: linear-gradient(135deg, #162b46 0%, #0f1d31 100%);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            padding: 8px 9px 8px 13px;
+            border-radius: 16px;
+            box-shadow:
+                0 14px 35px rgba(2, 8, 23, 0.34),
+                0 4px 12px rgba(2, 8, 23, 0.18);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        .selection-toolbar .sel-info {
+            color: #e8eef7;
+            font-size: 11px;
+            font-weight: 600;
+            gap: 7px;
+            padding-right: 3px;
+        }
+
+        .selection-toolbar .sel-info > i {
+            color: #7dd3fc;
+            font-size: 15px;
+        }
+
+        .selection-toolbar .sel-info .sel-count {
+            background: #2563eb;
+            color: #fff;
+            min-width: 24px;
+            text-align: center;
+            border-radius: 8px;
+            padding: 3px 7px;
+            font-size: 11px;
+            box-shadow: 0 3px 9px rgba(37, 99, 235, 0.28);
+        }
+
+        .selection-toolbar .btn-sel-print {
+            appearance: none;
+            border: 0;
+            outline: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 36px;
+            padding: 0 16px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .1px;
+            white-space: nowrap;
+            cursor: pointer;
+            box-shadow: 0 5px 14px rgba(37, 99, 235, 0.30);
+            transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+        }
+
+        .selection-toolbar .btn-sel-print i {
+            font-size: 14px;
+        }
+
+        .selection-toolbar .btn-sel-print:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.07);
+            box-shadow: 0 7px 18px rgba(37, 99, 235, 0.38);
+        }
+
+        .selection-toolbar .btn-sel-print:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 9px rgba(37, 99, 235, 0.28);
+        }
+
+        .selection-toolbar .btn-sel-cancel {
+            min-height: 34px;
+            padding: 0 12px;
+            border-radius: 9px;
+            background: transparent;
+            border: 1px solid rgba(203, 213, 225, 0.20);
+            color: #aebdce;
+            font-size: 10px;
+            font-weight: 600;
+            box-shadow: none;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        .selection-toolbar .btn-sel-cancel:hover {
+            transform: none;
+            background: rgba(255,255,255,.07);
+            border-color: rgba(203,213,225,.32);
+            color: #fff;
+            box-shadow: none;
+        }
+
+        @media (max-width: 600px) {
+            .selection-toolbar {
+                left: 10px;
+                right: 10px;
+                bottom: 12px;
+                transform: translateY(16px);
+                width: auto;
+                max-width: none;
+                border-radius: 14px;
+                padding: 8px;
+                gap: 7px;
+            }
+
+            .selection-toolbar.show {
+                transform: translateY(0);
+            }
+
+            .selection-toolbar .sel-info {
+                flex: 0 0 auto;
+                font-size: 10px;
+            }
+
+            .selection-toolbar .btn-sel-print {
+                flex: 1 1 auto;
+                min-width: 0;
+                padding: 0 10px;
+                font-size: 10px;
+            }
+
+            .selection-toolbar .btn-sel-print span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .selection-toolbar .btn-sel-cancel {
+                flex: 0 0 auto;
+                padding: 0 9px;
+            }
         }
 
         /* ===== MODAL KONFIRMASI CUSTOM (pengganti confirm()/prompt() bawaan) ===== */
@@ -1542,6 +1703,21 @@
             z-index: 5;
             border: none;
         }
+        /* Tab1 Bank Data Penjualan — header tabel lembut selaras warna tab */
+        #tab1TableWrap th,
+        #tab1 #tab1TableWrap th,
+        #tab1LegacyContent #tab1TableWrap th {
+            background: #eef2ff !important;
+            color: #4c51bf !important;
+            border-bottom: 1px solid #c7d2fe !important;
+        }
+        html.gamas-dark-mode #tab1TableWrap th,
+        html.gamas-dark-mode #tab1 #tab1TableWrap th,
+        html.gamas-dark-mode #tab1LegacyContent #tab1TableWrap th {
+            background: rgba(102, 126, 234, 0.18) !important;
+            color: #a5b4fc !important;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.3) !important;
+        }
         .table-wrap td {
             padding: 6px 8px;
             border-bottom: 1px solid #e8ecf4;
@@ -1894,7 +2070,7 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--sc-border);
-            border-radius: 18px;
+            border-radius: 0;
             padding: 18px 20px 16px 20px;
             box-shadow: var(--sc-shadow);
             position: relative;
@@ -6272,6 +6448,59 @@ html:not(.gamas-dark-mode) #tab1 .bdp-new .empty-msg{
     color: #64748b;
 }
 
+/* ===== TAB1 Bank Data: header lembut (mode Tabel + mode Kartu) ===== */
+html:not(.gamas-dark-mode) #tab1 #tab1TableWrap th,
+html:not(.gamas-dark-mode) #tab1LegacyContent #tab1TableWrap th,
+html:not(.gamas-dark-mode) #tab1 .table-wrap th,
+html:not(.gamas-dark-mode) #tab1LegacyContent .table-wrap th,
+html:not(.gamas-dark-mode) #tab1 .bdp-new #tab1TableWrap thead th,
+html:not(.gamas-dark-mode) #tab1 .bdp-new #tab1TableWrap table thead th {
+    background: #eef2ff !important;
+    color: #4c51bf !important;
+    border-bottom: 1px solid #c7d2fe !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+html:not(.gamas-dark-mode) #tab1 .sc-item-table thead th,
+html:not(.gamas-dark-mode) #tab1LegacyContent .sc-item-table thead th,
+html:not(.gamas-dark-mode) #tab1 .bdp-new .sc-item-table thead th,
+html:not(.gamas-dark-mode) #tab1LegacyContent.bdp-new .sc-item-table thead th,
+html:not(.gamas-dark-mode) .sales-card .sc-item-table thead th {
+    background: #eef2ff !important;
+    color: #4c51bf !important;
+    border-bottom: 1px solid #c7d2fe !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    position: static !important;
+    top: auto !important;
+}
+html:not(.gamas-dark-mode) #tab1 .sc-item-table tbody td,
+html:not(.gamas-dark-mode) #tab1LegacyContent .sc-item-table tbody td,
+html:not(.gamas-dark-mode) .sales-card .sc-item-table tbody td {
+    color: #475569 !important;
+    background: transparent !important;
+}
+#tab1 .sales-card,
+#tab1LegacyContent .sales-card {
+    border-radius: 0 !important;
+}
+html.gamas-dark-mode #tab1 #tab1TableWrap th,
+html.gamas-dark-mode #tab1LegacyContent #tab1TableWrap th,
+html.gamas-dark-mode #tab1 .table-wrap th {
+    background: rgba(102, 126, 234, 0.18) !important;
+    color: #a5b4fc !important;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.3) !important;
+}
+html.gamas-dark-mode #tab1 .sc-item-table thead th,
+html.gamas-dark-mode #tab1LegacyContent .sc-item-table thead th,
+html.gamas-dark-mode .sales-card .sc-item-table thead th {
+    background: rgba(102, 126, 234, 0.16) !important;
+    color: #a5b4fc !important;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.3) !important;
+    border-radius: 0 !important;
+    position: static !important;
+}
+
 /* DARK MODE — pastikan semua font tetap terbaca */
 html.gamas-dark-mode #tab1 .bdp-new{
     color: #e2e8f0;
@@ -6287,6 +6516,14 @@ html.gamas-dark-mode #tab1 .bdp-new .field select{
     border-color: rgba(148,163,184,.25);
 }
 html.gamas-dark-mode #tab1 .bdp-new table tbody td{
+    color: #e2e8f0;
+}
+html.gamas-dark-mode #tab1 .bdp-new table tbody tr:hover{
+    background: transparent;
+    box-shadow: none;
+}
+html.gamas-dark-mode #tab1 .bdp-new table tbody tr:hover td{
+    background: rgba(56, 189, 248, 0.14);
     color: #e2e8f0;
 }
 html.gamas-dark-mode #tab1 .bdp-new .empty-msg{
@@ -6586,8 +6823,9 @@ font:600 12px/1.3 Arial,sans-serif;display:none;box-shadow:0 4px 18px rgba(0,0,0
 <div class="selection-toolbar" id="salesSelectionToolbar">
 <div class="sel-info"><i class="bi bi-check2-square"></i> <span class="sel-count" id="salesToolbarCount">0</span> faktur dipilih</div>
 <button class="btn-sel-cancel" id="btnSalesToolbarCancel">Batal</button>
-<button class="btn-sel-print" id="btnSalesToolbarPrint">🖨️ Kirim Faktur ke Cetak Tagihan</button>
+<button class="btn-sel-print" id="btnSalesToolbarPrint"><i class="bi bi-send-fill"></i><span>Kirim Faktur ke Cetak Tagihan</span></button>
 <button class="btn-sel-trash" id="btnSalesToolbarTrash"><i class="bi bi-trash3"></i> Pindah ke Sampah</button>
+<button class="btn-sel-close" id="btnSalesToolbarClose" title="Tutup" aria-label="Tutup">✕</button>
 </div>
 <!-- ===== Floating toolbar Cek Cash & Cek Piutang dihapus: sekarang centang faktur langsung membuka modal konfirmasi kirim. ===== -->
 <!-- ===== Modal Konfirmasi Custom (pengganti confirm()/prompt() bawaan) ===== -->
@@ -12436,7 +12674,16 @@ function t2GetCorrection(faktur) {
         }
 
         function renderTagihanDariPiutang() {
-            const selectedRows = buildTagihanRowsFromBankData();
+            // Setelah faktur dikirim ke Cetak Tagihan, pilihan di Bank Data
+            // memang sengaja dikosongkan. Karena itu Cetak Tagihan harus
+            // memakai antrean tersendiri (_tagihanSelectedRows), bukan lagi
+            // bergantung pada salesRowsSelected.
+            const queuedRows = Array.isArray(window._tagihanSelectedRows)
+                ? window._tagihanSelectedRows
+                : [];
+            const selectedRows = queuedRows.length
+                ? queuedRows
+                : buildTagihanRowsFromBankData();
             const tbody = document.getElementById('tagihanTableBody');
             const tfoot = document.getElementById('tagihanTableFoot');
             if (!tbody || !tfoot) return;
@@ -12834,10 +13081,31 @@ function t2GetCorrection(faktur) {
                 return;
             }
             // Pilihan checkbox adalah PILIH FAKTUR, bukan pilih baris produk.
-            // Semua baris dengan No.Faktur yang sama sudah tersimpan di
-            // salesRowsSelected, lalu dibentuk menjadi 1 baris faktur di Cetak Tagihan.
+            // Simpan hasil pilihan ke antrean Cetak Tagihan SEBELUM selection
+            // Bank Data dikosongkan. Antrean ini menjadi sumber data Cetak Tagihan.
+            const newTagihanRows = buildTagihanRowsFromBankData();
+            const existingTagihanRows = Array.isArray(window._tagihanSelectedRows)
+                ? window._tagihanSelectedRows
+                : [];
+
+            const tagihanByFaktur = new Map();
+            existingTagihanRows.forEach(r => {
+                if (r && r.noFaktur) tagihanByFaktur.set(normFaktur(r.noFaktur), r);
+            });
+            newTagihanRows.forEach(r => {
+                if (r && r.noFaktur) tagihanByFaktur.set(normFaktur(r.noFaktur), r);
+            });
+
+            window._tagihanSelectedRows = Array.from(tagihanByFaktur.values());
+            window._tagihanTotal = window._tagihanSelectedRows.reduce(
+                (sum, r) => sum + parseNumber(r.total), 0
+            );
+
             renderTagihanDariPiutang();
             switchTab('tab6');
+            salesRowsSelected.clear();
+            document.querySelectorAll('.sales-trash-checkbox').forEach(cb => cb.checked = false);
+            updateSalesSelectedInfo();
             showToast('✅ ' + selectedInvoices.length + ' faktur dikirim ke Cetak Tagihan.', 'success');
         });
 
@@ -12847,13 +13115,50 @@ function t2GetCorrection(faktur) {
             updateSalesSelectedInfo();
         });
 
-        if (document.getElementById('btnSalesToolbarTrash') && typeof jalankanPindahSalesKeSampah === 'function') {
-            document.getElementById('btnSalesToolbarTrash').addEventListener('click', jalankanPindahSalesKeSampah);
+        if (document.getElementById('btnSalesToolbarClose')) {
+            document.getElementById('btnSalesToolbarClose').addEventListener('click', function() {
+                salesRowsSelected.clear();
+                document.querySelectorAll('.sales-trash-checkbox').forEach(cb => cb.checked = false);
+                updateSalesSelectedInfo();
+            });
+        }
+
+        if (document.getElementById('btnSalesToolbarTrash')) {
+            document.getElementById('btnSalesToolbarTrash').addEventListener('click', async function () {
+                const idxs = Array.from(salesRowsSelected || []);
+                if (!idxs.length) { showToast('⚠️ Centang data penjualan yang akan dipindahkan ke Sampah.', 'warning'); return; }
+                if (!confirm('Pindahkan ' + idxs.length + ' baris terpilih ke Data Sampah?')) return;
+                const alasan = prompt('Alasan pindahkan ke Sampah:', 'Salah Input') || 'Salah Input';
+                try {
+                    const moved = await pindahkanSalesKeSampah(idxs, alasan);
+                    salesRowsSelected.clear(); rebuildSalesFilterOptions(); renderSales(); renderRingkasanSaveAll();
+                    showToast('🗑️ ' + moved + ' baris berhasil dipindahkan ke Sampah.', 'success');
+                } catch (e) { showToast('❌ Gagal memindahkan ke Sampah: ' + e.message, 'warning'); }
+            });
         }
 
         document.getElementById('tagihanBtnRefresh').addEventListener('click', function() {
+            renderTagihanDariPiutang();
             showToast('🔄 Daftar tagihan diperbarui dari Bank Data Penjualan.', 'success');
         });
+
+        const tagihanMenuToggleEl = document.getElementById('tagihanMenuToggle');
+        const tagihanMenuDropdownEl = document.getElementById('tagihanMenuDropdown');
+        if (tagihanMenuToggleEl && tagihanMenuDropdownEl) {
+            tagihanMenuToggleEl.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const willOpen = !tagihanMenuDropdownEl.classList.contains('open');
+                tagihanMenuDropdownEl.classList.toggle('open', willOpen);
+                tagihanMenuToggleEl.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            });
+            tagihanMenuDropdownEl.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            document.addEventListener('click', function() {
+                tagihanMenuDropdownEl.classList.remove('open');
+                tagihanMenuToggleEl.setAttribute('aria-expanded', 'false');
+            });
+        }
 
         // ================================================================
         // GAGAL CETAK (BATALKAN 1 FAKTUR SAJA DARI CETAK TAGIHAN)
@@ -12868,13 +13173,31 @@ function t2GetCorrection(faktur) {
 
             if (!confirm('Faktur ' + noFaktur + ' gagal dicetak / tidak jadi ditagih?\nBaris ini akan dihapus dari Cetak Tagihan.')) return;
 
+            // Hapus langsung dari antrean Cetak Tagihan.
+            // Sebelumnya kode hanya menghapus dari salesRowsSelected,
+            // padahal setelah dikirim ke Cetak Tagihan selection tersebut
+            // memang sudah dikosongkan. Akibatnya baris tetap muncul.
+            if (Array.isArray(window._tagihanSelectedRows)) {
+                window._tagihanSelectedRows = window._tagihanSelectedRows.filter(r =>
+                    r && normFaktur(r.noFaktur) !== normFaktur(noFaktur)
+                );
+            }
+
+            // Pengaman untuk selection Bank Data bila fungsi ini dipanggil
+            // sebelum proses kirim selesai.
             salesRowsSelected = new Set(
                 Array.from(salesRowsSelected).filter(gidx => {
                     const r = salesData[gidx];
-                    return r && String(r['No.Faktur'] || '').trim() !== noFaktur;
+                    return r && normFaktur(r['No.Faktur']) !== normFaktur(noFaktur);
                 })
             );
+
+            window._tagihanTotal = (window._tagihanSelectedRows || []).reduce(
+                (sum, r) => sum + parseNumber(r.total), 0
+            );
+
             renderSales();
+            renderTagihanDariPiutang();
             showToast('✖ Faktur ' + noFaktur + ' dibatalkan dari Cetak Tagihan.', 'success');
         });
 
@@ -12888,6 +13211,7 @@ function t2GetCorrection(faktur) {
             renderSales();
             window._tagihanSelectedRows = [];
             window._tagihanTotal = 0;
+            renderTagihanDariPiutang();
 
             showToast('✅ Semua pilihan telah dihapus.', 'success');
         });
@@ -13341,8 +13665,18 @@ function t2GetCorrection(faktur) {
             const grandTotalEl = document.getElementById('ringkasanGrandTotal');
             if (grandTotalEl) grandTotalEl.value = formatAngka(totalCash + totalTransfer);
 
-            const totalRows = document.querySelectorAll('#piutangInputBody tr:not(.group-subtotal):not(.row-spacer)').length +
-                document.querySelectorAll('#cashInputBody tr:not(.group-subtotal):not(.row-spacer)').length;
+            function hitungBarisTerisi(tbodyId) {
+                const tbody = document.getElementById(tbodyId);
+                if (!tbody) return 0;
+                const rows = Array.from(tbody.querySelectorAll('tr')).filter(
+                    tr => !tr.classList.contains('group-subtotal') && !tr.classList.contains('row-spacer')
+                );
+                return rows.filter(tr => {
+                    const inputs = tr.querySelectorAll('input:not(.total-baris)');
+                    return Array.from(inputs).some(inp => inp.value.trim() !== '');
+                }).length;
+            }
+            const totalRows = hitungBarisTerisi('piutangInputBody') + hitungBarisTerisi('cashInputBody');
             const recordCountEl = document.getElementById('recordCount');
             if (recordCountEl) recordCountEl.textContent = totalRows + ' baris';
             document.getElementById('badgePembayaran').textContent = totalRows;
@@ -14116,7 +14450,17 @@ function t2GetCorrection(faktur) {
                 box.style.display = 'block';
                 box.innerHTML = '<span style="color:#6b7280;">Mencari...</span>';
                 let allDays = [];
-                try { allDays = await loadAllCashForCek(); } catch (e) { allDays = []; }
+                try {
+                    const records = await db.cashIncome.toArray();
+                    records.forEach(rec => {
+                        if (Array.isArray(rec.data)) {
+                            rec.data.forEach(day => {
+                                day._bulanRecord = rec.bulan;
+                                allDays.push(day);
+                            });
+                        }
+                    });
+                } catch (e) { allDays = []; }
                 const hits = [];
                 allDays.forEach(day => {
                     const bulan = day._bulanRecord || '';
@@ -14216,7 +14560,7 @@ function t2GetCorrection(faktur) {
                 document.documentElement.setAttribute('data-pwa-standalone', 'true');
                 const header = document.querySelector('.app-header');
                 if (header) {
-                    header.style.display = 'none !important';
+                    header.style.setProperty('display', 'none', 'important');
                     header.style.visibility = 'hidden';
                     header.style.height = '0';
                     header.style.margin = '0';
@@ -14730,7 +15074,7 @@ function t2GetCorrection(faktur) {
                     'PRODUK': produkDisplay,
                     'TGL NOTA': fmtTanggal(r.tanggal),
                     'TGL TEMPO': r.jt || '',
-                    'TAGIHAN': nominal,
+                    'TAGIHAN': r.total || 0,
                     'KET': ket
                 };
             });
@@ -17084,7 +17428,7 @@ document.addEventListener('scroll', () => _produkAcHide(), true);
             }
 
             function bgDueUniqueRows() {
-                const source = Array.isArray(window.t2AllRows) ? window.t2AllRows : [];
+                const source = Array.isArray(t2AllRows) ? t2AllRows : [];
                 const result = [];
                 const seen = new Set();
 
@@ -17140,7 +17484,7 @@ document.addEventListener('scroll', () => _produkAcHide(), true);
 
             window.t2CheckBgDueAlert = function () {
                 // Hanya dicek saat Uang Masuk sudah dirender.
-                if (!Array.isArray(window.t2AllRows) && typeof t2AllRows === 'undefined') return;
+                if (!Array.isArray(t2AllRows)) return;
 
                 let closed = false;
                 try {
